@@ -9,9 +9,7 @@ namespace Shipping {
 
 using namespace std;
 
-//
-// Rep layer classes
-//
+/*** Rep layer interfaces ***/
 
 class ManagerImpl : public Instance::Manager {
 public:
@@ -26,54 +24,69 @@ public:
     // Manager method
     void instanceDel(const string& name);
 
-private:
-    map<string,Ptr<Instance> > instance_;
+    ShippingNetwork* network_;
 };
-
-class LocationRep : public Instance {
-public:
-
-    LocationRep(const string& name, ManagerImpl* manager) :
-        Instance(name), manager_(manager)
-    {
-        // Nothing else to do.
-    }
-
-    // Instance method
-    string attribute(const string& name);
-
-    // Instance method
-    void attributeIs(const string& name, const string& v);
-
-private:
-    Ptr<ManagerImpl> manager_;
-
-    int segmentNumber(const string& name);
-
-};
-                                                                                                  
-class TruckTerminalRep : public LocationRep {
-public:
-
-    TruckTerminalRep(const string& name, ManagerImpl *manager) :
-        LocationRep(name, manager)
-    {
-        // Nothing else to do.
-    }
-
-};
-
 
 ManagerImpl::ManagerImpl() {
 }
 
 Ptr<Instance> ManagerImpl::instanceNew(const string& name, const string& type) {
+    if (type == "Customer") {
+        Ptr<CustomerRep> t = new CustomerRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Port") {
+        Ptr<PortRep> t = new PortRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
     if (type == "Truck terminal") {
         Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this);
         instance_[name] = t;
         return t;
     }
-
+    if (type == "Boat terminal") {
+        Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Plane terminal") {
+        Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Truck segment") {
+        Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Boat segment") {
+        Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Plane segment") {
+        Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Stats") {
+        Ptr<StatsRep> t = new StatsRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Conn") {
+        Ptr<ConnRep> t = new ConnRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    if (type == "Fleet") {
+        Ptr<FleetRep> t = new FleetRep(name, this);
+        instance_[name] = t;
+        return t;
+    }
+    // Add other cases here
     return NULL;
 }
 
@@ -87,7 +100,148 @@ void ManagerImpl::instanceDel(const string& name) {
 }
 
 
-string LocationRep::attribute(const string& name) {
+class LocationRep : public Instance {
+public:
+
+    LocationRep(const string& name, ManagerImpl* manager) :
+        Instance(name), manager_(manager) {}
+
+    // Instance method
+    string attribute(const string& name);
+
+    // Instance method
+    void attributeIs(const string& name, const string& v);
+
+private:
+    Ptr<ManagerImpl> manager_;
+    int segmentNumber(const string& name);
+
+    Location loc_;
+
+};
+
+class CustomerRep : public LocationRep {
+public:
+
+    CustomerRep(const string& name, ManagerImpl *manager) :
+        LocationRep(name, manager) {}
+
+};
+
+class PortRep : public LocationRep {
+public:
+
+    PortRep(const string& name, ManagerImpl *manager) :
+        LocationRep(name, manager) {}
+
+};
+
+class TruckTerminalRep : public LocationRep {
+public:
+
+    TruckTerminalRep(const string& name, ManagerImpl *manager) :
+        LocationRep(name, manager) {}
+
+};
+
+class BoatTerminalRep : public LocationRep {
+public:
+    BoatTerminalRep(const string& name, ManagerImpl *manager) :
+        LocationRep(name, manager) {}
+};
+
+class PlaneTerminalRep : public LocationRep {
+public:
+
+    PlaneTerminalRep(const string& name, ManagerImpl *manager) :
+        LocationRep(name, manager) {}
+
+};
+
+
+class SegmentRep : public Instance {
+public:
+    SegmentRep(const string& name, ManagerImpl* manager) :
+        Instance(name), manager_(manager) {}
+
+    // Instance method
+    string attribute(const string& name);
+
+    // Instance method
+    void attributeIs(const string& name, const string& v);
+
+private:
+    Ptr<ManagerImpl> manager_;
+};
+
+class TruckSegmentRep : public SegmentRep {
+public:
+    TruckSegmentRep(const string& name, ManagerImpl* manager) :
+        SegmentRep(name, manager) {}
+};
+
+class BoatSegmentRep : public SegmentRep {
+public:
+    BoatSegmentRep(const string& name, ManagerImpl* manager) :
+        SegmentRep(name, manager) {}
+};
+
+class PlaneSegmentRep : public SegmentRep {
+public:
+    PlaneSegmentRep(const string& name, ManagerImpl* manager) :
+        SegmentRep(name, manager) {}
+};
+
+
+class StatsRep : public Instance {
+public:
+    StatsRep(const string& name, ManagerImpl* manager) :
+        Instance(name), manager_(manager) {}
+
+    // Instance method
+    string attribute(const string& name);
+
+    // Instance method
+    void attributeIs(const string& name, const string& v);
+
+private:
+    Ptr<ManagerImpl> manager_;
+};
+
+
+class ConnRep : public Instance {
+public:
+    ConnRep(const string& name, ManagerImpl* manager) :
+        Instance(name), manager_(manager) {}
+
+    // Instance method
+    string attribute(const string& name);
+
+    // Instance method
+    void attributeIs(const string& name, const string& v);
+
+private:
+    Ptr<ManagerImpl> manager_;
+};
+
+class FleetRep : public Instance {
+public:
+    FleetRep(const string& name, ManagerImpl* manager) :
+        Instance(name), manager_(manager) {}
+
+    // Instance method
+    string attribute(const string& name);
+
+    // Instance method
+    void attributeIs(const string& name, const string& v);
+
+private:
+    Ptr<ManagerImpl> manager_;
+};
+
+
+
+string Location::attribute(const string& name) {
     int i = segmentNumber(name);
     if (i != 0) {
         cout << "Tried to read interface " << i;
@@ -96,14 +250,14 @@ string LocationRep::attribute(const string& name) {
 }
 
 
-void LocationRep::attributeIs(const string& name, const string& v) {
+void Location::attributeIs(const string& name, const string& v) {
     //nothing to do
 }
 
 static const string segmentStr = "segment";
 static const int segmentStrlen = segmentStr.length();
 
-int LocationRep::segmentNumber(const string& name) {
+int Location::segmentNumber(const string& name) {
     if (name.substr(0, segmentStrlen) == segmentStr) {
         const char* t = name.c_str() + segmentStrlen;
         return atoi(t);
