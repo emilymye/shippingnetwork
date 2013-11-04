@@ -11,6 +11,24 @@ namespace Shipping {
 
 using namespace std;
 
+static const string customerStr = "Customer";
+static const string portStr = "Port";
+static const string truckTerminalStr = "Truck terminal";
+static const string boatTerminalStr = "Boat terminal";
+static const string planeTerminalStr = "Plane terminal";
+static const string truckSegmentStr = "Truck segment";
+static const string boatSegmentStr = "Boat segment";
+static const string planeSegmentStr = "Plane segment";
+static const string statsStr = "Stats";
+static const string connStr = "Conn";
+static const string fleetStr = "Fleet";
+static const string segmentStr = "segment";
+static const int segmentStrlen = segmentStr.length();
+static const string sourceStr = "source";
+static const string lengthStr = "length";
+static const string returnSegStr = "return segment";
+static const string difficultyStr = "difficulty";
+static const string expSupportStr = "expedite support";
 /*** Rep layer interfaces ***/
 
 class ManagerImpl : public Instance::Manager {
@@ -35,57 +53,57 @@ private:
 ManagerImpl::ManagerImpl() {}
 
 Ptr<Instance> ManagerImpl::instanceNew(const string& name, const string& type) {
-    if (type == "Customer") {
+    if (type == customerStr) {
         Ptr<CustomerRep> t = new CustomerRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Port") {
+    else if (type == portStr) {
         Ptr<PortRep> t = new PortRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Truck terminal") {
+    else if (type == truckTerminalStr) {
         Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Boat terminal") {
+    else if (type == boatTerminalStr) {
         Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Plane terminal") {
+    else if (type == planeTerminalStr) {
         Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Truck segment") {
+    else if (type == truckSegmentStr) {
         Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Boat segment") {
+    else if (type == boatSegmentStr) {
         Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Plane segment") {
+    else if (type == planeSegmentStr) {
         Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Stats") {
+    else if (type == statsStr) {
         Ptr<StatsRep> t = new StatsRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Conn") {
+    else if (type == connStr) {
         Ptr<ConnRep> t = new ConnRep(name, this);
         instance_[name] = t;
         return t;
     }
-    else if (type == "Fleet") {
+    else if (type == fleetStr) {
         Ptr<FleetRep> t = new FleetRep(name, this);
         instance_[name] = t;
         return t;
@@ -139,8 +157,6 @@ LocationRep::LocationRep(const string& name, ManagerImpl* manager) :
     loc_ = new LocationNew(name);
 }
 
-static const string segmentStr = "segment";
-static const int segmentStrlen = segmentStr.length();
 string LocationRep::attribute(const string& name) {
     if (name.length() <= segmentStrlen) {
         cerr << "Invalid attribute\n"
@@ -232,11 +248,6 @@ private:
     Ptr<ManagerImpl> manager_;
 };
 
-static const string sourceStr = "source";
-static const string lengthStr = "length";
-static const string returnSegStr = "return segment";
-static const string difficultyStr = "difficulty";
-static const string expSupportStr = "expedite support";
 static const MAXDIGITS = 20;
 string SegmentRep::attribute(const string& name) {
     if (!name.compare(sourceStr)) {
@@ -293,7 +304,9 @@ public:
 class StatsRep : public Instance {
 public:
     StatsRep(const string& name, ManagerImpl* manager) :
-        Instance(name), manager_(manager) {}
+        Instance(name), manager_(manager) {
+        stats_ = new StatsNew(name);
+    }
 
     // Instance method
     string attribute(const string& name);
@@ -301,10 +314,27 @@ public:
     // Instance method
     void attributeIs(const string& name, const string& v);
 
+protected:
+    Stats* stats_;
 private:
     Ptr<ManagerImpl> manager_;
 };
 
+string StatsRep::attribute(const string& name) {
+    char *str = new char[MAXDIGITS];
+    if (!name.compare(expPercentageStr)) {
+        itoa(stats_.expeditePercentage(), str, 10);
+    }
+    else {
+        itoa(stats_.entityCount(name), str, 10);
+    }
+    return str;
+}
+
+void StatsRep::attributeIs(const string& name, const string& v) {
+    cerr << "cannot call attributeIs() on StatsRep\n";
+    return;
+}
 
 class ConnRep : public Instance {
 public:
