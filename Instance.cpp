@@ -2,6 +2,8 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <cstdlib>
+#include <cctype>
 #include "Instance.h"
 #include "Engine.h"
 
@@ -24,11 +26,13 @@ public:
     // Manager method
     void instanceDel(const string& name);
 
-    ShippingNetwork* network_;
+//    ShippingNetwork* network_;
+
+private:
+    map<string,Ptr<Instance> > instance_;
 };
 
-ManagerImpl::ManagerImpl() {
-}
+ManagerImpl::ManagerImpl() {}
 
 Ptr<Instance> ManagerImpl::instanceNew(const string& name, const string& type) {
     if (type == "Customer") {
@@ -36,75 +40,85 @@ Ptr<Instance> ManagerImpl::instanceNew(const string& name, const string& type) {
         instance_[name] = t;
         return t;
     }
-    if (type == "Port") {
+    else if (type == "Port") {
         Ptr<PortRep> t = new PortRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Truck terminal") {
+    else if (type == "Truck terminal") {
         Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Boat terminal") {
+    else if (type == "Boat terminal") {
         Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Plane terminal") {
+    else if (type == "Plane terminal") {
         Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Truck segment") {
+    else if (type == "Truck segment") {
         Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Boat segment") {
+    else if (type == "Boat segment") {
         Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Plane segment") {
+    else if (type == "Plane segment") {
         Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Stats") {
+    else if (type == "Stats") {
         Ptr<StatsRep> t = new StatsRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Conn") {
+    else if (type == "Conn") {
         Ptr<ConnRep> t = new ConnRep(name, this);
         instance_[name] = t;
         return t;
     }
-    if (type == "Fleet") {
+    else if (type == "Fleet") {
         Ptr<FleetRep> t = new FleetRep(name, this);
         instance_[name] = t;
         return t;
     }
-    // Add other cases here
     return NULL;
 }
 
 Ptr<Instance> ManagerImpl::instance(const string& name) {
     map<string,Ptr<Instance> >::const_iterator t = instance_.find(name);
-
-    return t == instance_.end() ? NULL : (*t).second;
+    if (t == instance_.end()) {
+        cerr << name << " does not exist as an instance\n";
+        return NULL;
+    }
+    else {
+        return (*t).second;
+    }
 }
 
 void ManagerImpl::instanceDel(const string& name) {
+    map<string,Ptr<Instance> >::const_iterator t = instance_.find(name);
+    if (t == instance_.end()) {
+        cerr << name << " does not exist as an instance\n";
+    }
+    else {
+        instance_.erase(t);
+    }
+    return;
 }
 
 
 class LocationRep : public Instance {
 public:
-
-    LocationRep(const string& name, ManagerImpl* manager) :
-        Instance(name), manager_(manager) {}
+    LocationRep(const string& name, ManagerImpl* manager);
 
     // Instance method
     string attribute(const string& name);
@@ -112,19 +126,53 @@ public:
     // Instance method
     void attributeIs(const string& name, const string& v);
 
+protected:
+    Location* loc_;
+
 private:
     Ptr<ManagerImpl> manager_;
     int segmentNumber(const string& name);
-
-    Location loc_;
-
 };
+
+LocationRep::LocationRep(const string& name, ManagerImpl* manager) :
+    Instance(name), manager_(manager) {
+    loc_ = new LocationNew(name);
+}
+
+string LocationRep::attribute(const string& name) {
+    if (name.length() <= 7) {
+        cerr << "Invalid attribute\n"
+        return "";
+    }
+    if (name.substr(0, 7).compare("segment") != 0) {
+        cerr << "Invalid attribute\n"
+        return "";
+    }
+    for (int i = 7; i < name.length(); i++) {
+        if (!isdigit(name[i])) {
+            cerr << "Invalid attribute\n"
+            return "";
+        }
+    }
+
+    int segNum = atoi(name.substr(7).c_str());
+    Ptr<Segment> segment = loc_.segment(segNum);
+    return segment.name();
+}
+
+void LocationRep::attributeIs(const string& name, const string& v) {
+    cerr << "Cannot set attribute of Location entity\n" <<
+    "Set source attribute of segment instead\n";
+    return;
+}
+
 
 class CustomerRep : public LocationRep {
 public:
-
     CustomerRep(const string& name, ManagerImpl *manager) :
-        LocationRep(name, manager) {}
+        LocationRep(name, manager) {
+        loc_->typeIs(Location::customer);
+    }
 
 };
 
@@ -132,7 +180,9 @@ class PortRep : public LocationRep {
 public:
 
     PortRep(const string& name, ManagerImpl *manager) :
-        LocationRep(name, manager) {}
+        LocationRep(name, manager) {
+        loc_->typeIs(Location::port);
+    }
 
 };
 
@@ -140,21 +190,26 @@ class TruckTerminalRep : public LocationRep {
 public:
 
     TruckTerminalRep(const string& name, ManagerImpl *manager) :
-        LocationRep(name, manager) {}
+        LocationRep(name, manager) {
+        loc_->typeIs(Location::truckTerminal);
+    }
 
 };
 
 class BoatTerminalRep : public LocationRep {
 public:
     BoatTerminalRep(const string& name, ManagerImpl *manager) :
-        LocationRep(name, manager) {}
+        LocationRep(name, manager) {
+        loc_->typeIs(Location::boatTerminal);
+    }
 };
 
 class PlaneTerminalRep : public LocationRep {
 public:
-
     PlaneTerminalRep(const string& name, ManagerImpl *manager) :
-        LocationRep(name, manager) {}
+        LocationRep(name, manager) {
+        loc_->typeIs(Location::planeTerminal);
+    }
 
 };
 

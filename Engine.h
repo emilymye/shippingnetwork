@@ -106,12 +106,12 @@ public:
         customer,
         port,
         truckTerminal,
-        busTerminal,
+        boatTerminal,
         planeTerminal
     };
     LocationType type();
     typeIs( LocationType type );
-    typedef Fwk::LinkedList<Segment::Ptr> SegmentList
+    typedef Fwk::LinkedList<Segment::Ptr> SegmentList;
 private:
     LocationType type_;
     SegmentList segments_;
@@ -145,7 +145,7 @@ private:
 
 enum Mode {
     truck,
-    bus,
+    boat,
     plane,
     MODE_COUNT //DO NOT MOVE
 };
