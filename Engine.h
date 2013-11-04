@@ -127,9 +127,11 @@ public:
     Mile length() { return length_; };
     void lengthIs( Mile newLength ) { length_ = newLength; };
     
-    Segment::Ptr returnSegment()
+    Segment::Ptr returnSegment();
     void returnSegmentIs( string & segmentName );
-    
+
+    Difficulty difficulty();
+
     bool expediteSupport();
     void expediteSupportIs( bool support );
 protected:

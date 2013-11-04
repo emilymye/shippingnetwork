@@ -139,16 +139,18 @@ LocationRep::LocationRep(const string& name, ManagerImpl* manager) :
     loc_ = new LocationNew(name);
 }
 
+static const string segmentStr = "segment";
+static const int segmentStrlen = segmentStr.length();
 string LocationRep::attribute(const string& name) {
-    if (name.length() <= 7) {
+    if (name.length() <= segmentStrlen) {
         cerr << "Invalid attribute\n"
         return "";
     }
-    if (name.substr(0, 7).compare("segment") != 0) {
+    if (name.substr(0, segmentStrlen).compare(segmentStr) != 0) {
         cerr << "Invalid attribute\n"
         return "";
     }
-    for (int i = 7; i < name.length(); i++) {
+    for (int i = segmentStrlen; i < name.length(); i++) {
         if (!isdigit(name[i])) {
             cerr << "Invalid attribute\n"
             return "";
@@ -224,27 +226,67 @@ public:
 
     // Instance method
     void attributeIs(const string& name, const string& v);
-
+protected:
+    Segment* seg_;
 private:
     Ptr<ManagerImpl> manager_;
 };
 
+static const string sourceStr = "source";
+static const string lengthStr = "length";
+static const string returnSegStr = "return segment";
+static const string difficultyStr = "difficulty";
+static const string expSupportStr = "expedite support";
+static const MAXDIGITS = 20;
+string SegmentRep::attribute(const string& name) {
+    if (!name.compare(sourceStr)) {
+        return seg_->source().name();
+    }
+    else if (!name.compare(lengthStr)) {
+        char *str = new char[MAXDIGITS];
+        sprintf(str, "%.2f", seg_->length());
+        return str;
+    }
+    else if (!name.compare(returnSegStr)) {
+        return seg_->returnSegment()->name();
+    }
+    else if (!name.compare(difficultyStr)) {
+        char *str = new char[MAXDIGITS];
+        sprintf(str, "%.2f", seg_->difficulty());
+        return str;
+    }
+    else if (!name.compare(expSupportStr)) {
+        if (seg_->expediteSupport()) {
+            return "yes";
+        }
+        else {
+            return "no";
+        }
+    }
+}
+
 class TruckSegmentRep : public SegmentRep {
 public:
     TruckSegmentRep(const string& name, ManagerImpl* manager) :
-        SegmentRep(name, manager) {}
+        SegmentRep(name, manager) {
+        seg_ = new SegmentNew(name, truck);
+    }
 };
 
 class BoatSegmentRep : public SegmentRep {
 public:
     BoatSegmentRep(const string& name, ManagerImpl* manager) :
-        SegmentRep(name, manager) {}
+        SegmentRep(name, manager) {
+        seg_ = new SegmentNew(name, boat);
+    }
 };
 
 class PlaneSegmentRep : public SegmentRep {
 public:
     PlaneSegmentRep(const string& name, ManagerImpl* manager) :
-        SegmentRep(name, manager) {}
+        SegmentRep(name, manager) {
+        seg_ = new SegmentNew(name, plane);
+    }
 };
 
 
@@ -293,32 +335,6 @@ public:
 private:
     Ptr<ManagerImpl> manager_;
 };
-
-
-
-string Location::attribute(const string& name) {
-    int i = segmentNumber(name);
-    if (i != 0) {
-        cout << "Tried to read interface " << i;
-    }
-    return "";
-}
-
-
-void Location::attributeIs(const string& name, const string& v) {
-    //nothing to do
-}
-
-static const string segmentStr = "segment";
-static const int segmentStrlen = segmentStr.length();
-
-int Location::segmentNumber(const string& name) {
-    if (name.substr(0, segmentStrlen) == segmentStr) {
-        const char* t = name.c_str() + segmentStrlen;
-        return atoi(t);
-    }
-    return 0;
-}
 
 
 }
