@@ -265,7 +265,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<TruckSegment const> PtrConst;
         typedef Fwk::Ptr<TruckSegment> Ptr;
-        static TruckSegment::Ptr TruckSegmentIs( Fwk::String _name) {
+        static TruckSegment::Ptr TruckSegmentNew( Fwk::String _name) {
             Ptr m = new TruckSegment(_name);
             return m;
         }
@@ -277,7 +277,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<BoatSegment const> PtrConst;
         typedef Fwk::Ptr<BoatSegment> Ptr;
-        static BoatSegment::Ptr BoatSegmentIs( Fwk::String _name) {
+        static BoatSegment::Ptr BoatSegmentNew( Fwk::String _name) {
             Ptr m = new BoatSegment(_name);
             return m;
         }
@@ -289,7 +289,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<PlaneSegment const> PtrConst;
         typedef Fwk::Ptr<PlaneSegment> Ptr;
-        static PlaneSegment::Ptr PlaneSegmentIs( Fwk::String _name) {
+        static PlaneSegment::Ptr PlaneSegmentNew( Fwk::String _name) {
             Ptr m = new PlaneSegment(_name);
             return m;
         }
