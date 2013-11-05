@@ -1,9 +1,8 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include "Nominal.h"
 #include "fwk/Exception.h"
-#include <string>
-#include "fwk/BaseNotifiee.h"
 #include "fwk/NamedInterface.h"
 #include "fwk/HashMap.h"
 #include "fwk/LinkedList.h"
@@ -13,23 +12,13 @@
 #include "Instance.h"
 
 namespace Shipping{
-    /*ORDINAL VALUE TYPES*/
-    class Capacity : public Ordinal<Capacity, unsigned int> {
-    public:
-        Capacity(unsigned int num) : Ordinal<Capacity,unsigned int>(num) {};
-    };
     class Difficulty : public Ordinal<Difficulty,float> {
     public:
-        Difficulty(float num) : Ordinal<Difficulty, float>(num){
-            if (num < min_ || num > max_ ){
+        Difficulty(float num = 1.0) : Ordinal<Difficulty, float>(num){
+            if ( num < 1.0 || num > 5.0 ){
                 throw Fwk::RangeException("Difficulty");
             }
         }
-        Difficulty min() const { return min_; };
-        Difficulty max() const { return max_; }
-    protected:
-        const float min_ = 1.0;
-        const float max_ = 5.0;
     };
     class Mile : public Ordinal<Mile, float> {
     public:
@@ -49,104 +38,102 @@ namespace Shipping{
             if (num < 0 ) throw Fwk::RangeException("Cost");
         }
     };
-    class Time : public Ordinal<Cost, float> {
+    class Capacity : public Ordinal<Capacity, unsigned int> {
     public:
-        Time(float num) : Ordinal<Time, float>(num){
-            if (num < 0 ) throw Fwk::RangeException("Time");
-        }
+        Capacity(unsigned int num) : Ordinal<Capacity,unsigned int>(num) {};
     };
 
-    class ShippingMode {
-        enum Mode {
-            truck,
-            boat,
-            plane,
-            MODE_COUNT //DO NOT MOVE
-        };
-        static inline Mode truck() { return truck; }
-        static inline Mode boat() { return boat; }
-        static inline Mode plane() { return plane; }
-        static inline unsigned int types() { return MODE_COUNT; }
+    enum ShippingMode {
+        Truck,
+        Boat,
+        Plane,
+        MODE_COUNT //DO NOT MOVE
     };
 
-    class Location : Fwk::NamedInterface {
-    public:
-        typedef Fwk::Ptr<Location const> PtrConst;
-        typedef Fwk::Ptr<Location> Ptr;
-        Fwk::String fwkKey() const { return name(); }
-
-        enum LocationType{
-            customer_,
-            port_,
-            terminal_,
-        };
-        LocationType type();
-        void typeIs( LocationType type );
-        static inline LocationType customer() { return customer_; };
-        static inline LocationType port() { return port_; };
-        static inline LocationType terminal() { return terminal_; };
-
-        Segment::Ptr segment( int segmentN );
-        void segmentIs( Fwk::String segmentName );
-        typedef Fwk::LinkedList<Segment::Ptr> SegmentList;
-    private:
-        LocationType type_;
-        SegmentList segments_;
-    };
-
-    class CustomerLocation : public Location {
-    public:
-        typedef Fwk::Ptr<CustomerLocation const> PtrConst;
-        typedef Fwk::Ptr<CustomerLocation> Ptr;
-    };
-
-    class PortLocation : public Location{
-    public:
-    };
-
-    class TerminalLocation : public Location {
-    public:
-        enum Mode {
-            truck_,
-            boat_,
-            plane_
-        };
-        Mode mode() { return mode_; };
-        void modeIs( Mode m) { mode_ = m; }
-    private:
-        Mode mode_;
-    };
-
-
+    class Location;
 
     class Segment : public Fwk::NamedInterface {
     public: 
         typedef Fwk::Ptr<Segment const> PtrConst;
         typedef Fwk::Ptr<Segment> Ptr;
-        Segment::Ptr SegmentNew( Fwk::String _name, Mode_mode);
+        static Segment::Ptr SegmentNew(Fwk::String _name, ShippingMode _mode){
+            Ptr m = new Segment(_name, _mode);
+            return m;
+        }
+        //HASHMAP
+        Segment const * fwkHmNext() const { return fwkHmNext_.ptr(); }
+        Segment * fwkHmNext() { return fwkHmNext_.ptr(); }
+        void fwkHmNextIs(Segment * _fwkHmNext) const {fwkHmNext_ = _fwkHmNext;}
+        Fwk::String fwkKey() const { return name(); }
 
-        Location::Ptr source();
-        void sourceIs( Location::Ptr source ); 
+        ShippingMode mode() const { return mode_; };
 
-        Mile length() { return length_; };
-        void lengthIs( Mile newLength ) { length_ = newLength; };
+        Location const * source() const { return source_; }
+        Location * source() { return source_; }
+        void sourceIs( Location* _loc ) { source_ = _loc; }
 
-        Segment::Ptr returnSegment();
+        Segment::PtrConst returnSegment() const { return returnSegment_; }
+        Segment::Ptr returnSegment() { return returnSegment_; }
         void returnSegmentIs( string & segmentName );
 
-        Difficulty difficulty();
-
-        bool expediteSupport();
-        void expediteSupportIs( bool support );
+        Mile length() const { return length_; }
+        void lengthIs( Mile newLength ) { length_ = newLength; }
+        Difficulty difficulty() const { return difficulty_; }
+        void difficultyIs(Difficulty d)  { difficulty_ = d; }
+        bool expediteSupport() const { return expediteSupport_; }
+        void expediteSupportIs( bool support ) { expediteSupport_ = support; }
     protected:
-        Segment( Fwk::String _name, Mode _mode ) : Fwk::NamedInterface(_name), length_(1), mode_(_mode){}
-    private:
-        Mode mode_;
-        Location * source;
-        Mile length_;
+        Segment (const Segment&);
+        Segment(Fwk::String _name, ShippingMode _mode) : 
+            Fwk::NamedInterface(_name), mode_(_mode), length_(0.f),difficulty_(0.f) {}
+        mutable Segment::Ptr fwkHmNext_; 
+
+        ShippingMode mode_;
+        Location * source_; 
         Segment* returnSegment_;
+        Mile length_;
         Difficulty difficulty_;
         bool expediteSupport_;
+    };
+
+    // START LOCATION CLASSES ===============================================
+    class Location : Fwk::NamedInterface {
+    public:
+        typedef Fwk::Ptr<Location const> PtrConst;
+        typedef Fwk::Ptr<Location> Ptr;
+        
+        enum LocationType{
+            customer_,
+            port_,
+            terminal_,
+        };
+        static inline LocationType customer() { return customer_; }
+        static inline LocationType port() { return port_; }
+        static inline LocationType terminal() { return terminal_; }
+        LocationType type() const { return type_; }
+        void typeIs( LocationType _type ) { type_ = _type; }
+
+        static Location::Ptr LocationNew(Fwk::String _name, LocationType _type){
+            Ptr m = new Location(_name, _type);
+            return m;
+        }
+        //HASHMAP
+        Location const * fwkHmNext() const { return fwkHmNext_.ptr(); }
+        Location * fwkHmNext() { return fwkHmNext_.ptr(); }
+        void fwkHmNextIs(Location * _fwkHmNext) const {fwkHmNext_ = _fwkHmNext;}
+        Fwk::String fwkKey() const { return name(); }
+
+        ~Location();
+        typedef Fwk::LinkedList<Segment::Ptr> SegmentList;
+        Segment::PtrConst segment( int num ) const { return *(segment_[num]); }
+        Segment::Ptr segment( int num ) { return *(segment_[num]); }
+        void segmentIs( Fwk::String segmentName ); //TODO
+    protected:
+        Location ( const Location&);
+        Location(Fwk::String _name, LocationType _type) : Fwk::NamedInterface(_name), type_(_type) {}
+        mutable Location::Ptr fwkHmNext_; 
+        LocationType type_;
+        SegmentList segment_;
     };
 
     class Fleet : public Fwk::NamedInterface {
@@ -155,37 +142,159 @@ namespace Shipping{
         typedef Fwk::Ptr<Fleet> Ptr;
         Fleet::Ptr FleetNew(Fwk::String name);
 
-        Speed speed( Mode m );
-        void speedIs (Mode m, Speed s);
-        Capacity capacity( Mode m );
-        void capacityIs (Mode m, Speed s);
-        Cost cost( Mode m );
-        void costIs (Mode m, Speed s);  
-    private:
         struct FleetMode {
-            Speed speeds_;
+            Speed speed_;
             Capacity capacity_;
             Cost cost_;
         };
-        FleetMode modes [MODE_COUNT];
+
+        Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
+        void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
+        Capacity capacity( ShippingMode m ) const{ return fleetmode[m].capacity_; }
+        void capacityIs (ShippingMode m, Capacity _capacity) { fleetmode[m].capacity_ = _capacity; }
+        Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
+        void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
+    protected:
+        FleetMode fleetmode[MODE_COUNT];
     };
 
-    //For assignment 3 - disregard for now
+    /******** ASSIGNMENT 3 CODE - disregard for now
     class Shipment : public Fwk::NamedInterface {
     public:
-        Shipment::Ptr ShipmentNew( Fwk::String name );
+    typedef Fwk::Ptr<Shipment const> PtrConst;
+    typedef Fwk::Ptr<Shipment> Ptr;
+    Shipment::Ptr ShipmentNew( Fwk::String name );
 
-        Capacity packages();
-        void packagesIs( unsigned int _packages );
-        Location::Ptr source();
-        void sourceIs(Location::Ptr s)
-            Location::Ptr destination();
-        void destinationIs(Location::Ptr l)
+    Capacity packages() const { return packages_; }
+    void packagesIs( unsigned int _packages ) {}
+    Location::Ptr source();
+    void sourceIs(Location::Ptr s)
+    Location::Ptr destination();
+    void destinationIs(Location::Ptr l)
+    protected:
+    Shipment( const Shipment&);
+    explicit Shipment(Fwk::String _name) : Fwk::NamedInterface(_name), packages_(0){}
+    Capacity packages_;
+    Location* source;
+    Location* destination;
+    } 
+
+    */
+
+    // LOCATION SUBCLASSES ==============================================
+    class CustomerLocation : public Location {
+    public:
+        typedef Fwk::Ptr<CustomerLocation const> PtrConst;
+        typedef Fwk::Ptr<CustomerLocation> Ptr;
+        static CustomerLocation::Ptr CustomerLocationIs( Fwk::String _name ) {
+            Ptr m = new CustomerLocation(_name);
+            return m;
+        }
+    protected:
+        CustomerLocation (const CustomerLocation& );
+        CustomerLocation( Fwk::String _name) : Location(_name, LocationType::customer_) {}
+    };
+    class PortLocation : public Location {
+    public:
+        typedef Fwk::Ptr<PortLocation const> PtrConst;
+        typedef Fwk::Ptr<PortLocation> Ptr;
+        static PortLocation::Ptr PortLocationIs( Fwk::String _name ) {
+            Ptr m = new PortLocation(_name);
+            return m;
+        }
+    protected:
+        PortLocation (const PortLocation& );
+        PortLocation( Fwk::String _name) : Location(_name, LocationType::port_) {}
+    };
+    class Terminal : public Location {
+    public:
+        typedef Fwk::Ptr<Terminal const> PtrConst;
+        typedef Fwk::Ptr<Terminal> Ptr;
+        static Terminal::Ptr TerminalIs( Fwk::String _name , ShippingMode _mode ) {
+            Ptr m = new Terminal(_name, _mode);
+            return m;
+        }
+        ShippingMode mode() { return mode_; }
+    protected:
+        Terminal (const Terminal& );
+        Terminal( Fwk::String _name, ShippingMode _mode) : mode_(_mode), Location(_name, LocationType::port_) {}
+        ShippingMode mode_;
+    };
+    // Terminal subclasses
+    class TruckTerminal : public Terminal {
+    public:
+        typedef Fwk::Ptr<TruckTerminal const> PtrConst;
+        typedef Fwk::Ptr<TruckTerminal> Ptr;
+        static TruckTerminal::Ptr TruckTerminalIs( Fwk::String _name) {
+            Ptr m = new TruckTerminal(_name);
+            return m;
+        }
     private:
-        Capacity packages_;
-        Location* source;
-        Location* destination;
+        TruckTerminal (const TruckTerminal& );
+        TruckTerminal( Fwk::String _name) : Terminal (_name,ShippingMode::Truck){}
+    };
+    class BoatTerminal : public Terminal {
+    public:
+        typedef Fwk::Ptr<BoatTerminal const> PtrConst;
+        typedef Fwk::Ptr<BoatTerminal> Ptr;
+        static BoatTerminal::Ptr BoatTerminalIs( Fwk::String _name) {
+            Ptr m = new BoatTerminal(_name);
+            return m;
+        }
+    private:
+        BoatTerminal (const BoatTerminal& );
+        BoatTerminal( Fwk::String _name) : Terminal (_name,ShippingMode::Boat){}
+    };
+    class PlaneTerminal : public Terminal {
+    public:
+        typedef Fwk::Ptr<PlaneTerminal const> PtrConst;
+        typedef Fwk::Ptr<PlaneTerminal> Ptr;
+        static PlaneTerminal::Ptr BoatTerminalIs( Fwk::String _name) {
+            Ptr m = new PlaneTerminal(_name);
+            return m;
+        }
+    private:
+        PlaneTerminal (const PlaneTerminal& );
+        PlaneTerminal( Fwk::String _name) : Terminal(_name,ShippingMode::Plane){}
+    };
 
-    }
+    // SEGMENT SUBCLASSES ==============================================
+    class TruckSegment : public Segment {
+    public:
+        typedef Fwk::Ptr<TruckSegment const> PtrConst;
+        typedef Fwk::Ptr<TruckSegment> Ptr;
+        static TruckSegment::Ptr TruckSegmentIs( Fwk::String _name) {
+            Ptr m = new TruckSegment(_name);
+            return m;
+        }
+    protected:
+        TruckSegment (const TruckSegment& );
+        TruckSegment( Fwk::String _name) : Segment(_name, ShippingMode::Truck) {}
+    };
+    class BoatSegment : public Segment {
+    public:
+        typedef Fwk::Ptr<BoatSegment const> PtrConst;
+        typedef Fwk::Ptr<BoatSegment> Ptr;
+        static BoatSegment::Ptr BoatSegmentIs( Fwk::String _name) {
+            Ptr m = new BoatSegment(_name);
+            return m;
+        }
+    protected:
+        BoatSegment (const TruckSegment& );
+        BoatSegment( Fwk::String _name) : Segment(_name, ShippingMode::Boat) {}
+    };
+    class PlaneSegment : public Segment {
+    public:
+        typedef Fwk::Ptr<PlaneSegment const> PtrConst;
+        typedef Fwk::Ptr<PlaneSegment> Ptr;
+        static PlaneSegment::Ptr PlaneSegmentIs( Fwk::String _name) {
+            Ptr m = new PlaneSegment(_name);
+            return m;
+        }
+    protected:
+        PlaneSegment (const TruckSegment& );
+        PlaneSegment( Fwk::String _name) : Segment(_name, ShippingMode::Plane) {}
+    };
 
+} /* end namespace */
 #endif

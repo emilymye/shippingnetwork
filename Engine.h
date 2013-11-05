@@ -1,5 +1,6 @@
 #ifndef ENGINE_H
 #define ENGINE_H
+
 #include <string>
 #include "fwk/Exception.h"
 #include "fwk/BaseNotifiee.h"
@@ -14,6 +15,13 @@
 
 namespace Shipping {
     //ordinal value types
+    class Time : public Ordinal<Time, float> {
+    public:
+        Time(float num) : Ordinal<Time, float>(num){
+            if (num < 0 ) throw Fwk::RangeException("Time");
+        }
+    };
+
     class ShippingNetwork : public Fwk::NamedInterface {
     public:
         typedef Fwk::Ptr<ShippingNetwork const> PtrConst;
@@ -27,15 +35,13 @@ namespace Shipping {
             typedef Fwk::Ptr<NotifieeConst const> PtrConst;
             typedef Fwk::Ptr<NotifieeConst> Ptr;
             Fwk::String name() const { return (notifier_?notifier_->name():Fwk::String()); }
-            bool isNonReferencing() const { return isNonReferencing_; }
-            NotifieeConst const * lrNext() const { return lrNext_; }
-            NotifieeConst * lrNext() { return lrNext_; }
             ShippingNetwork::PtrConst notifier() const { return notifier_; }
+            bool isNonReferencing() const { return isNonReferencing_; }
+
             // Non-const interface =============================================
             ~NotifieeConst();
             virtual void notifierIs(const ShippingNetwork::PtrConst& _notifier);
             void isNonReferencingIs(bool _isNonReferencing);
-            void lrNextIs(NotifieeConst * _lrNext) { lrNext_ = _lrNext; }
             static NotifieeConst::Ptr NotifieeConstIs() { 
                 Ptr m = new NotifieeConst();
                 return m;
@@ -46,11 +52,11 @@ namespace Shipping {
         protected:
             ShippingNetwork::PtrConst notifier_;
             bool isNonReferencing_;
-            NotifieeConst * lrNext_;
+            Fwk::String tacKeyForLocation_;
             NotifieeConst(): Fwk::NamedInterface::NotifieeConst(),
-                isNonReferencing_(false),
-                lrNext_(0) {}
+                isNonReferencing_(false){}
         };
+
         class Notifiee : public virtual NotifieeConst, public virtual Fwk::NamedInterface::Notifiee {
         public:
             typedef Fwk::Ptr<Notifiee const> PtrConst;
@@ -58,6 +64,7 @@ namespace Shipping {
             ShippingNetwork::PtrConst notifier() const { return NotifieeConst::notifier(); }
             ShippingNetwork::Ptr notifier() { return const_cast<ShippingNetwork *>(NotifieeConst::notifier().ptr()); }
             // Non-const interface =============================================
+
             static Notifiee::Ptr NotifieeIs() {
                 Ptr m = new Notifiee();
                 return m;
@@ -71,21 +78,21 @@ namespace Shipping {
 
         //LOCATION ==============================================
         typedef Fwk::HashMap<Location, Fwk::String, Location, Location::PtrConst, Location::Ptr> LocationDict;
-        Location::Ptr LocationIs( Fwk::String _name);
-        Location::PtrConst location( Fwk::String _name) const { return location_[_name]; };
-        Location::Ptr location( Fwk::String _name) { return location_[_name]; };
+        Location::Ptr LocationNew( Location::Ptr newLocation);
+        Location const* location( Fwk::String _name) const { return location_[_name]; };
+        Location* location( Fwk::String _name) { return location_[_name]; };
 
         //SEGMENT ==============================================
         typedef Fwk::HashMap<Segment, Fwk::String, Segment, Segment::PtrConst, Segment::Ptr> SegmentDict;
-        Segment::Ptr SegmentIs( Fwk::String _name);
-        Segment::PtrConst segment( Fwk::String _name) const { return segment_[_name]; };
-        Segment::Ptr segment( Fwk::String _name) { return segment_[_name]; };
+        Segment::Ptr SegmentNew( Segment::Ptr newSegment );
+        Segment const* segment( Fwk::String _name) const { return segment_[_name]; };
+        Segment * segment( Fwk::String _name) { return segment_[_name]; };
 
         //FLEET ==============================================
         typedef Fwk::HashMap<Fleet, Fwk::String, Fleet, Fleet::PtrConst, Fleet::Ptr> FleetDict;
-        Fleet::Ptr FleetIs( Fwk::String _name);
-        Fleet::PtrConst fleet( Fwk::String _name) const { return fleet_[_name]; };
-        Fleet::Ptr fleet( Fwk::String _name) { return fleet_[_name]; };
+        Fleet::Ptr FleetNew(  Fleet::Ptr newFleet );
+        Fleet const* fleet( Fwk::String _name) const { return fleet_[_name]; };
+        Fleet * fleet( Fwk::String _name) { return fleet_[_name]; };
 
         //CONNECTIVITY ==============================================
         struct ExplorationQuery{
@@ -117,7 +124,11 @@ namespace Shipping {
 
     class ShippingNetworkReactor : public ShippingNetwork::Notifiee{
     public:
-        static ShippingNetworkReactor::Ptr ShippingNetworkReactorIs( ShippingNetwork* sn) {}
+        static ShippingNetworkReactor::Ptr ShippingNetworkReactorIs( ShippingNetwork* sn) {
+            Ptr m = new ShippingNetworkReactor(sn);
+            return m;
+        }
+
         void onLocationNew(Location::Ptr loc);
         void onSegmentNew(Segment::Ptr seg);
 
@@ -145,12 +156,12 @@ namespace Shipping {
 
         Percent expeditedPercent();
     protected:
-        ShippingNetworkReactor(ShippingNetwork * sn) : ShippingNetwork::Notifiee() { 
-            notifierIs(sn); 
-        }
+        ShippingNetworkReactor(ShippingNetwork * sn) : expeditedSegments(0), ShippingNetwork::Notifiee() { notifierIs(sn); }
         unsigned int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
     };
-} /* end namespace */
+
+
+}
 
 #endif
