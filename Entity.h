@@ -106,10 +106,12 @@ namespace Shipping{
             customer_,
             port_,
             terminal_,
+            other_
         };
         static inline LocationType customer() { return customer_; }
         static inline LocationType port() { return port_; }
         static inline LocationType terminal() { return terminal_; }
+        static inline LocationType other() { return terminal_; }
         LocationType type() const { return type_; }
         void typeIs( LocationType _type ) { type_ = _type; }
 
@@ -186,7 +188,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<CustomerLocation const> PtrConst;
         typedef Fwk::Ptr<CustomerLocation> Ptr;
-        static CustomerLocation::Ptr CustomerLocationIs( Fwk::String _name ) {
+        static CustomerLocation::Ptr CustomerLocationNew(Fwk::String _name ) {
             Ptr m = new CustomerLocation(_name);
             return m;
         }
@@ -198,7 +200,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<PortLocation const> PtrConst;
         typedef Fwk::Ptr<PortLocation> Ptr;
-        static PortLocation::Ptr PortLocationIs( Fwk::String _name ) {
+        static PortLocation::Ptr PortLocationNew( Fwk::String _name ) {
             Ptr m = new PortLocation(_name);
             return m;
         }
@@ -210,7 +212,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<Terminal const> PtrConst;
         typedef Fwk::Ptr<Terminal> Ptr;
-        static Terminal::Ptr TerminalIs( Fwk::String _name , ShippingMode _mode ) {
+        static Terminal::Ptr TerminalNew( Fwk::String _name , ShippingMode _mode ) {
             Ptr m = new Terminal(_name, _mode);
             return m;
         }
@@ -225,7 +227,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<TruckTerminal const> PtrConst;
         typedef Fwk::Ptr<TruckTerminal> Ptr;
-        static TruckTerminal::Ptr TruckTerminalIs( Fwk::String _name) {
+        static TruckTerminal::Ptr TruckTerminalNew( Fwk::String _name) {
             Ptr m = new TruckTerminal(_name);
             return m;
         }
@@ -237,7 +239,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<BoatTerminal const> PtrConst;
         typedef Fwk::Ptr<BoatTerminal> Ptr;
-        static BoatTerminal::Ptr BoatTerminalIs( Fwk::String _name) {
+        static BoatTerminal::Ptr BoatTerminalNew( Fwk::String _name) {
             Ptr m = new BoatTerminal(_name);
             return m;
         }
@@ -249,7 +251,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<PlaneTerminal const> PtrConst;
         typedef Fwk::Ptr<PlaneTerminal> Ptr;
-        static PlaneTerminal::Ptr BoatTerminalIs( Fwk::String _name) {
+        static PlaneTerminal::Ptr BoatTerminalNew( Fwk::String _name) {
             Ptr m = new PlaneTerminal(_name);
             return m;
         }

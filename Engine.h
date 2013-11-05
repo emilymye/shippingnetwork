@@ -26,7 +26,10 @@ namespace Shipping {
     public:
         typedef Fwk::Ptr<ShippingNetwork const> PtrConst;
         typedef Fwk::Ptr<ShippingNetwork> Ptr;
-        ShippingNetwork::Ptr ShippingNetworkNew();
+        static ShippingNetwork::Ptr ShippingNetworkNew(Fwk::String _name) { 
+            Ptr m = new ShippingNetwork(_name);
+            return m;
+        }
         ~ShippingNetwork();
 
         /* NOTIFIEE IMPLEMENTATION ==============================================*/
@@ -106,6 +109,7 @@ namespace Shipping {
         Fwk::String exploration( Fwk::String startLocation,  ExplorationQuery query); 
         Fwk::String connection( Fwk::String startLocation, Fwk::String endLocation );
     protected:
+        ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name);
         ShippingNetwork::Notifiee * notifiee_;
         void notifieeIs( ShippingNetwork::Notifiee *  n) const {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
