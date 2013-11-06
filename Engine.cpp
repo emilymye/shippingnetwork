@@ -1,6 +1,19 @@
 #include "Engine.h"
 
 namespace Shipping {
+    ShippingNetwork::~ShippingNetwork(){
+        LocationDict::Iterator li = location_.iterator();
+        while (li.ptr()){
+            locationDel( li->fwkKey());
+            li = location_.iterator();
+        }
+        SegmentDict::Iterator si = segment_.iterator();
+        while (si.ptr()){
+            segmentDel( li->fwkKey());
+            si = segment_.iterator();
+        }
+    
+    }
     //----------| NotifieeConst Implementation |------------//
     ShippingNetwork::NotifieeConst::~NotifieeConst() {
         if(notifier_&&isNonReferencing()) notifier_->newRef();

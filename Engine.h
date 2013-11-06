@@ -59,7 +59,6 @@ namespace Shipping {
             NotifieeConst(): Fwk::NamedInterface::NotifieeConst(),
                 isNonReferencing_(false){}
         };
-
         class Notifiee : public virtual NotifieeConst, public virtual Fwk::NamedInterface::Notifiee {
         public:
             typedef Fwk::Ptr<Notifiee const> PtrConst;
@@ -81,21 +80,24 @@ namespace Shipping {
 
         //LOCATION ==============================================
         typedef Fwk::HashMap<Location, Fwk::String, Location, Location::PtrConst, Location::Ptr> LocationDict;
-        Location::Ptr LocationNew( Location::Ptr newLocation);
+        Location::Ptr locationNew( Location::Ptr l);
+        Location::Ptr locationDel( Fwk::String _name );
         Location const* location( Fwk::String _name) const { return location_[_name]; };
         Location* location( Fwk::String _name) { return location_[_name]; };
 
         //SEGMENT ==============================================
         typedef Fwk::HashMap<Segment, Fwk::String, Segment, Segment::PtrConst, Segment::Ptr> SegmentDict;
-        Segment::Ptr SegmentNew( Segment::Ptr newSegment );
+        Segment::Ptr segmentNew( Segment::Ptr s );
+        Segment::Ptr segmentDel( Fwk::String _name );
         Segment const* segment( Fwk::String _name) const { return segment_[_name]; };
         Segment * segment( Fwk::String _name) { return segment_[_name]; };
 
         //FLEET ==============================================
-        typedef Fwk::HashMap<Fleet, Fwk::String, Fleet, Fleet::PtrConst, Fleet::Ptr> FleetDict;
-        Fleet::Ptr FleetNew(  Fleet::Ptr newFleet );
-        Fleet const* fleet( Fwk::String _name) const { return fleet_[_name]; };
-        Fleet * fleet( Fwk::String _name) { return fleet_[_name]; };
+        Fleet::Ptr fleetNew (Fwk::String _name);
+        Fleet::Ptr fleetDel (Fwk::String _name); 
+        Fleet const* fleet() const {  return fleet_; };
+        Fleet * fleet() { return fleet_; };
+
 
         //CONNECTIVITY ==============================================
         struct ExplorationQuery{
@@ -109,7 +111,7 @@ namespace Shipping {
         Fwk::String exploration( Fwk::String startLocation,  ExplorationQuery query); 
         Fwk::String connection( Fwk::String startLocation, Fwk::String endLocation );
     protected:
-        ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name);
+        ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0) {}
         ShippingNetwork::Notifiee * notifiee_;
         void notifieeIs( ShippingNetwork::Notifiee *  n) const {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
@@ -117,7 +119,7 @@ namespace Shipping {
         }
         LocationDict location_;
         SegmentDict segment_;
-        FleetDict fleet_;
+        Fleet* fleet_;
     };
 
     class Percent : Ordinal<Percent,float>{
@@ -128,15 +130,17 @@ namespace Shipping {
 
     class ShippingNetworkReactor : public ShippingNetwork::Notifiee{
     public:
+        typedef Fwk::Ptr<ShippingNetworkReactor const> PtrConst;
+        typedef Fwk::Ptr<ShippingNetworkReactor> Ptr;
         static ShippingNetworkReactor::Ptr ShippingNetworkReactorIs( ShippingNetwork* sn) {
-            Ptr m = new ShippingNetworkReactor(sn);
+            ShippingNetworkReactor::Ptr m = new ShippingNetworkReactor(sn);
             return m;
         }
 
         void onLocationNew(Location::Ptr loc);
         void onSegmentNew(Segment::Ptr seg);
 
-        enum StatisticType{
+        enum StatsEntityType{
             customer_,
             port_,
             truckTerminal_,
@@ -147,22 +151,50 @@ namespace Shipping {
             planeSegment_,
             SHIPPING_ENTITY_COUNT
         };
-        unsigned int shippingEntities( StatisticType type );
-        static inline StatisticType customer() { return customer_; };
-        static inline StatisticType port() { return port_; };
-        static inline StatisticType truckTerminal() { return truckTerminal_; };
-        static inline StatisticType boatTerminal() { return boatTerminal_; };
-        static inline StatisticType planeTerminal() { return planeTerminal_; };
-        static inline StatisticType truckSegment() { return truckSegment_; };
-        static inline StatisticType boatSegment() { return boatSegment_; };
-        static inline StatisticType planeSegment() { return planeSegment_; };
-        static StatisticType StatisticInstance ( Fwk::String );
+        static inline StatsEntityType customer() { return customer_; };
+        static inline StatsEntityType port() { return port_; };
+        static inline StatsEntityType truckTerminal() { return truckTerminal_; };
+        static inline StatsEntityType boatTerminal() { return boatTerminal_; };
+        static inline StatsEntityType planeTerminal() { return planeTerminal_; };
+        static inline StatsEntityType truckSegment() { return truckSegment_; };
+        static inline StatsEntityType boatSegment() { return boatSegment_; };
+        static inline StatsEntityType planeSegment() { return planeSegment_; };
 
+        unsigned int shippingEntities( StatsEntityType type );
         Percent expeditedPercent();
     protected:
         ShippingNetworkReactor(ShippingNetwork * sn) : expeditedSegments(0), ShippingNetwork::Notifiee() { notifierIs(sn); }
         unsigned int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
+    };
+
+    class Fleet : public Fwk::NamedInterface {
+    public:
+        typedef Fwk::Ptr<Fleet const> PtrConst;
+        typedef Fwk::Ptr<Fleet> Ptr;
+        Fleet::Ptr FleetNew(Fwk::String _name) {
+            Ptr m = new Fleet( _name );
+            return m;
+        }
+
+        Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
+        void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
+
+        Capacity capacity( ShippingMode m ) const{ return fleetmode[m].capacity_; }
+        void capacityIs (ShippingMode m, Capacity _capacity) { fleetmode[m].capacity_ = _capacity; }
+
+        Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
+        void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
+    protected:
+        struct FleetMode {
+            Speed speed_;
+            Capacity capacity_;
+            Cost cost_;
+            FleetMode():speed_(0),capacity_(0),cost_(0) {}
+        };
+        Fleet (const Fleet&);
+        explicit Fleet( Fwk::String _name): Fwk::NamedInterface(_name){ }
+        FleetMode fleetmode[MODE_COUNT];
     };
 
 

@@ -50,7 +50,7 @@ namespace Shipping{
         MODE_COUNT //DO NOT MOVE
     };
 
-    class Location;
+    class Location : Fwk::NamedInterface {}; 
 
     class Segment : public Fwk::NamedInterface {
     public: 
@@ -74,7 +74,7 @@ namespace Shipping{
 
         Segment::PtrConst returnSegment() const { return returnSegment_; }
         Segment::Ptr returnSegment() { return returnSegment_; }
-        void returnSegmentIs( string & segmentName );
+        void returnSegmentIs( Segment::Ptr returnSeg ) { returnSegment_ = returnSeg.ptr(); }
 
         Mile length() const { return length_; }
         void lengthIs( Mile newLength ) { length_ = newLength; }
@@ -101,7 +101,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<Location const> PtrConst;
         typedef Fwk::Ptr<Location> Ptr;
-        
+
         enum LocationType{
             customer_,
             port_,
@@ -132,56 +132,11 @@ namespace Shipping{
         void segmentIs( Fwk::String segmentName ); //TODO
     protected:
         Location ( const Location&);
-        Location(Fwk::String _name, LocationType _type) : Fwk::NamedInterface(_name), type_(_type) {}
+        explicit Location(Fwk::String _name, LocationType _type) : Fwk::NamedInterface(_name), type_(_type) {}
         mutable Location::Ptr fwkHmNext_; 
         LocationType type_;
         SegmentList segment_;
     };
-
-    class Fleet : public Fwk::NamedInterface {
-    public:
-        typedef Fwk::Ptr<Fleet const> PtrConst;
-        typedef Fwk::Ptr<Fleet> Ptr;
-        Fleet::Ptr FleetNew(Fwk::String name);
-
-        struct FleetMode {
-            Speed speed_;
-            Capacity capacity_;
-            Cost cost_;
-        };
-
-        Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
-        void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
-        Capacity capacity( ShippingMode m ) const{ return fleetmode[m].capacity_; }
-        void capacityIs (ShippingMode m, Capacity _capacity) { fleetmode[m].capacity_ = _capacity; }
-        Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
-        void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
-    protected:
-        FleetMode fleetmode[MODE_COUNT];
-    };
-
-    /******** ASSIGNMENT 3 CODE - disregard for now
-    class Shipment : public Fwk::NamedInterface {
-    public:
-    typedef Fwk::Ptr<Shipment const> PtrConst;
-    typedef Fwk::Ptr<Shipment> Ptr;
-    Shipment::Ptr ShipmentNew( Fwk::String name );
-
-    Capacity packages() const { return packages_; }
-    void packagesIs( unsigned int _packages ) {}
-    Location::Ptr source();
-    void sourceIs(Location::Ptr s)
-    Location::Ptr destination();
-    void destinationIs(Location::Ptr l)
-    protected:
-    Shipment( const Shipment&);
-    explicit Shipment(Fwk::String _name) : Fwk::NamedInterface(_name), packages_(0){}
-    Capacity packages_;
-    Location* source;
-    Location* destination;
-    } 
-
-    */
 
     // LOCATION SUBCLASSES ==============================================
     class CustomerLocation : public Location {
@@ -251,7 +206,7 @@ namespace Shipping{
     public:
         typedef Fwk::Ptr<PlaneTerminal const> PtrConst;
         typedef Fwk::Ptr<PlaneTerminal> Ptr;
-        static PlaneTerminal::Ptr BoatTerminalNew( Fwk::String _name) {
+        static PlaneTerminal::Ptr PlaneTerminalNew( Fwk::String _name) {
             Ptr m = new PlaneTerminal(_name);
             return m;
         }
@@ -297,6 +252,29 @@ namespace Shipping{
         PlaneSegment (const TruckSegment& );
         PlaneSegment( Fwk::String _name) : Segment(_name, ShippingMode::Plane) {}
     };
+
+    /******** ASSIGNMENT 3 CODE - disregard for now
+    class Shipment : public Fwk::NamedInterface {
+    public:
+    typedef Fwk::Ptr<Shipment const> PtrConst;
+    typedef Fwk::Ptr<Shipment> Ptr;
+    Shipment::Ptr ShipmentNew( Fwk::String name );
+
+    Capacity packages() const { return packages_; }
+    void packagesIs( unsigned int _packages ) {}
+    Location::Ptr source();
+    void sourceIs(Location::Ptr s)
+    Location::Ptr destination();
+    void destinationIs(Location::Ptr l)
+    protected:
+    Shipment( const Shipment&);
+    explicit Shipment(Fwk::String _name) : Fwk::NamedInterface(_name), packages_(0){}
+    Capacity packages_;
+    Location* source;
+    Location* destination;
+    } 
+
+    */
 
 } /* end namespace */
 #endif
