@@ -47,10 +47,7 @@ namespace Shipping {
     //        return str;
     //}
 
-    /* Explore - explore:true, loc:start location, dst:NULL, 
-                 if not needed , set max_dist:FLT_MAX, max_cost:FLT_MAX, max_time:FLT_MAX, expedited:false
-       Connect - explore:false, loc:start location, dst:end location,
-                 max_dist, max_cost, max_time can be any value. If not needed, set expedited:false*/
+
     typedef struct Node {
         Location *loc;
         string *path;
@@ -59,9 +56,13 @@ namespace Shipping {
         float time;
     } Node_T;
 
-
-    void ShippingNetwork::explore(Location* loc, Location* dst, Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool exploration) {
-        stringstream ss;
+    /* Explore - explore:true, loc:start location, dst:NULL, 
+                 if not needed , set max_dist:FLT_MAX, max_cost:FLT_MAX, max_time:FLT_MAX, expedited:false
+       Connect - explore:false, loc:start location, dst:end location,
+                 max_dist, max_cost, max_time can be any value. If not needed, set expedited:false*/
+    string ShippingNetwork::explore(Location* loc, Location* dst, Mile max_dist, Cost max_cost, 
+                                          Time max_time, bool expedited, bool exploration) {
+        std::stringstream ss;
         map<string, bool> nodes_traversed;
         std::queue<Node_T> search_queue;
         Node_T node;
@@ -73,7 +74,7 @@ namespace Shipping {
         search_queue.push(node);
         nodes_traversed[loc->name()] = true;
 
-        stringstream append_ss; 
+        std::stringstream append_ss; 
         string appendStr = "";
         int pass;
         if (exploration && expedited) {
@@ -93,7 +94,7 @@ namespace Shipping {
                 search_queue.pop();
                 if (!exploration && current_loc == dst) { // print path
                     if (pass == 0) { // non-expedited
-                        ss << current_cost.value() << " " << current_time.value() << " no; " << *current_path << endl;
+                        ss << current_cost.value() << ' ' << current_time.value() << " no; " << *current_path << endl;
                     }
                     else { //expedited
                         ss << current_cost.value() << ' ' << current_time.value() << " yes; " << *current_path << endl;
@@ -154,11 +155,12 @@ namespace Shipping {
                 }
 
                 if (exploration && !newNode) { // print path
-                    std::cout << *current_path << endl;
+                    ss << *current_path << endl;
                 }
                 delete current_path;
             }
         }
+        return ss.str();
     }
 
 float ShippingNetwork::segTravCost(Segment::Ptr seg, bool expedited) {

@@ -12,6 +12,8 @@
 #include "Entity.h"
 #include "Nominal.h"
 #include <map>
+#include <cfloat>
+#include <sstream>
 namespace Shipping {
     using namespace std;
     //ordinal value types
@@ -115,7 +117,7 @@ namespace Shipping {
             me->notifiee_ = n;
         }
     private:
-        void explore(
+        string explore(
             Location* loc, Location* dst,
             Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool exploration);
         map<string,Location::Ptr> location_;
