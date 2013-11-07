@@ -61,11 +61,6 @@ namespace Shipping{
             Ptr m = new Segment(_name, _mode);
             return m;
         }
-        //HASHMAP
-        Segment const * fwkHmNext() const { return fwkHmNext_.ptr(); }
-        Segment * fwkHmNext() { return fwkHmNext_.ptr(); }
-        void fwkHmNextIs(Segment * _fwkHmNext) const {fwkHmNext_ = _fwkHmNext;}
-        Fwk::String fwkKey() const { return name(); }
 
         ShippingMode mode() const { return mode_; };
 
@@ -120,14 +115,7 @@ namespace Shipping{
             Ptr m = new Location(_name, _type);
             return m;
         }
-        //HASHMAP
-        Location const * fwkHmNext() const { return fwkHmNext_.ptr(); }
-        Location * fwkHmNext() { return fwkHmNext_.ptr(); }
-        void fwkHmNextIs(Location * _fwkHmNext) const {fwkHmNext_ = _fwkHmNext;}
-        Fwk::String fwkKey() const { return name(); }
-
-        ~Location();
-        typedef std::vector<Segment::Ptr> SegmentList;
+         ~Location();
         Segment::PtrConst segment( int num ) const { return segment_[num]; }
         Segment::Ptr segment( int num ) { return segment_[num]; }
         void segmentIs( Fwk::String segmentName ); //TODO
@@ -136,7 +124,7 @@ namespace Shipping{
         explicit Location(Fwk::String _name, LocationType _type) : Fwk::NamedInterface(_name), type_(_type) {}
         mutable Location::Ptr fwkHmNext_; 
         LocationType type_;
-        SegmentList segment_;
+        std::vector<Segment::Ptr> segment_;
     };
 
     // LOCATION SUBCLASSES ==============================================
@@ -174,9 +162,9 @@ namespace Shipping{
         }
         ShippingMode mode() { return mode_; }
     protected:
+        ShippingMode mode_;
         Terminal (const Terminal& );
         Terminal( Fwk::String _name, ShippingMode _mode) : mode_(_mode), Location(_name, Location::port_) {}
-        ShippingMode mode_;
     };
     // Terminal subclasses
     class TruckTerminal : public Terminal {
@@ -252,6 +240,36 @@ namespace Shipping{
     protected:
         PlaneSegment (const TruckSegment& );
         PlaneSegment( Fwk::String _name) : Segment(_name, Shipping::Plane_) {}
+    };
+
+
+    class Fleet : public Fwk::NamedInterface {
+    public:
+        typedef Fwk::Ptr<Fleet const> PtrConst;
+        typedef Fwk::Ptr<Fleet> Ptr;
+        Fleet::Ptr FleetNew(Fwk::String _name) {
+            Ptr m = new Fleet( _name );
+            return m;
+        }
+
+        Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
+        void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
+
+        Capacity capacity( ShippingMode m ) const{ return fleetmode[m].capacity_; }
+        void capacityIs (ShippingMode m, Capacity _capacity) { fleetmode[m].capacity_ = _capacity; }
+
+        Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
+        void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
+    protected:
+        struct FleetMode {
+            Speed speed_;
+            Capacity capacity_;
+            Cost cost_;
+            FleetMode():speed_(0),capacity_(0),cost_(0) {}
+        };
+        Fleet (const Fleet&);
+        explicit Fleet( Fwk::String _name): Fwk::NamedInterface(_name){ }
+        FleetMode fleetmode[MODE_COUNT];
     };
 
     /******** ASSIGNMENT 3 CODE - disregard for now

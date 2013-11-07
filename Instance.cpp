@@ -1,5 +1,6 @@
 #include "fwk/NamedInterface.h"
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <vector>
 #include <stdlib.h>
@@ -8,6 +9,7 @@
 #include "Instance.h"
 #include "Engine.h"
 #include "Entity.h"
+#include "Nominal.h"
 
 namespace Shipping {
 
@@ -26,6 +28,18 @@ namespace Shipping {
     static const string connStr = "Conn";
     static const string fleetStr = "Fleet";
 
+    class ManagerImpl : public Instance::Manager {
+    public:
+        ManagerImpl();
+        Ptr<Instance> instanceNew(const string& name, const string& type);
+        Ptr<Instance> instance(const string& name);
+        void instanceDel(const string& name);
+    private:
+        ShippingNetwork::Ptr network_;
+        ShippingNetworkReactor::Ptr reactor_;
+        map<string,Ptr<Instance> > instance_;
+    };
+
     /*** Rep layer interfaces ***/
     // LOCATION INSTANCE ==========================
     class LocationRep : public Instance {
@@ -40,7 +54,7 @@ namespace Shipping {
     };
 
     static const string segmentStr = "segment";
-    static const int segmentStrlen = segmentStr.length();
+    static const unsigned int segmentStrlen = segmentStr.length();
     string LocationRep::attribute(const string& name) {
         if (name.length() > segmentStrlen) {
             int idx = segmentNumber(name);
@@ -81,19 +95,19 @@ namespace Shipping {
 
     class TruckTerminalRep : public LocationRep {
     public:
-        TruckTerminalRep(const string& name, ManagerImpl *manager, Terminal::Ptr _loc) : 
+        TruckTerminalRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
             LocationRep(name, manager, _loc) { }
     };
 
     class BoatTerminalRep : public LocationRep {
     public:
-        BoatTerminalRep(const string& name, ManagerImpl *manager, Terminal::Ptr _loc) : 
+        BoatTerminalRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
             LocationRep(name, manager, _loc) { }
     };
 
     class PlaneTerminalRep : public LocationRep {
     public:
-        PlaneTerminalRep(const string& name, ManagerImpl *manager, Terminal::Ptr _loc) : 
+        PlaneTerminalRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
             LocationRep(name, manager, _loc) { }
     };
 
@@ -118,11 +132,11 @@ namespace Shipping {
 
     string SegmentRep::attribute(const string& name) {
         if (!name.compare(sourceStr)) {
-            return seg_->source()->fwkKey();
+            return seg_->source()->name();
         }
         else if (!name.compare(lengthStr)) {
             char *str = new char[MAXDIGITS];
-            sprintf(str, "%.2f", seg_->length());
+            sprintf(str, "%.2f", seg_->length().value());
             return str;
         }
         else if (!name.compare(returnSegStr)) {
@@ -131,7 +145,7 @@ namespace Shipping {
 
         else if (!name.compare(difficultyStr)) {
             char *str = new char[MAXDIGITS];
-            sprintf(str, "%.2f", seg_->difficulty());
+            sprintf(str, "%.2f", seg_->difficulty().value());
             return str;
         }
         else if (!name.compare(expSupportStr)) {
@@ -177,7 +191,7 @@ namespace Shipping {
 
     class StatsRep : public Instance {
     public:
-        StatsRep(const string& name, ManagerImpl* manager, ShippingNetworkReactor* reactor) :
+        StatsRep(const string& name, ManagerImpl* manager, ShippingNetworkReactor::Ptr reactor) :
             Instance(name), manager_(manager), reactor_(reactor) {}
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
@@ -189,27 +203,30 @@ namespace Shipping {
     static const string expPercentStr = "expedite percentage";
 
     string StatsRep::attribute(const string& name) {
-        char buf [MAXDIGITS];
+        stringstream ss;
         if (!name.compare(expPercentStr)) {
-            sprintf(buf,"%.2f",reactor_->expeditedPercent());
+            ss.precision(2);
+            ss << reactor_->expeditedPercent().value();
         } else if (name == customerStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::customer() ), buf, 10);
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::customer() );
         } else if (name == portStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::port() ), buf, 10);
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::port() );
         } else if (name == truckTerminalStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::truckTerminal() ), buf, 10);
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::truckTerminal() );
         } else if (name == boatTerminalStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::boatTerminal() ), buf, 10);
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::boatTerminal() );
         } else if (name == planeTerminalStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::planeTerminal() ), buf, 10);
+           ss << reactor_->shippingEntities( ShippingNetworkReactor::planeTerminal() );
         } else if (name == truckSegmentStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::truckSegment() ), buf, 10);
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::truckSegment() );
         } else if (name == boatSegmentStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::boatSegment() ), buf, 10);
+           ss << reactor_->shippingEntities( ShippingNetworkReactor::boatSegment() );
         } else if (name == planeSegmentStr) {
-            itoa( reactor_->shippingEntities( ShippingNetworkReactor::planeSegment() ), buf, 10);
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::planeSegment() );
         }
-        return buf;
+        string str;
+        ss >> str;
+        return str;
     }
 
     void StatsRep::attributeIs(const string& name, const string& v) {
@@ -241,18 +258,6 @@ namespace Shipping {
         Fleet::Ptr fleet_;
     };
 
-    class ManagerImpl : public Instance::Manager {
-    public:
-        ManagerImpl();
-        Ptr<Instance> instanceNew(const string& name, const string& type);
-        Ptr<Instance> instance(const string& name);
-        void instanceDel(const string& name);
-    private:
-        ShippingNetwork::Ptr network_;
-        ShippingNetworkReactor::Ptr reactor_;
-        map<string,Ptr<Instance> > instance_;
-    };
-
     ManagerImpl::ManagerImpl() {
         network_ = ShippingNetwork::ShippingNetworkNew("network");
         reactor_ = ShippingNetworkReactor::ShippingNetworkReactorIs(network_.ptr());
@@ -277,38 +282,38 @@ namespace Shipping {
         }
 
         else if (type == truckTerminalStr) {
-            Terminal::Ptr entity = network_->locationNew(TruckTerminal::TruckTerminalNew(name));
+            Location::Ptr entity = network_->locationNew(TruckTerminal::TruckTerminalNew(name));
             Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this, entity);
             instance_[name] = t;
             return t;
         }
         else if (type == boatTerminalStr) {
-            Terminal::Ptr entity = network_->locationNew(BoatTerminal::BoatTerminalNew(name));
+            Location::Ptr entity = network_->locationNew(BoatTerminal::BoatTerminalNew(name));
             Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this, entity);
             instance_[name] = t;
             return t;
         }
         else if (type == planeTerminalStr) {
-            Terminal::Ptr entity = network_->locationNew(PlaneTerminal::PlaneTerminalNew(name));
+            Location::Ptr entity = network_->locationNew(PlaneTerminal::PlaneTerminalNew(name));
             Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this, entity);
             instance_[name] = t;
             return t;
         }
         else if (type == truckSegmentStr) {
             Segment::Ptr entity = network_->segmentNew(TruckSegment::TruckSegmentNew(name));
-            Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, network_, entity);
+            Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, entity, network_);
             instance_[name] = t;
             return t;
         }
         else if (type == boatSegmentStr) {
             Segment::Ptr entity = network_->segmentNew(BoatSegment::BoatSegmentNew(name));
-            Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, network_, entity);
+            Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, entity, network_);
             instance_[name] = t;
             return t;
         }
         else if (type == planeSegmentStr) {
-            Segment::Ptr entity = network_->locationNew(PlaneSegment::PlaneSegmentNew(name));
-            Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, network_, entity);
+            Segment::Ptr entity = network_->segmentNew(PlaneSegment::PlaneSegmentNew(name));
+            Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, entity, network_);
             instance_[name] = t;
             return t;
         }
@@ -323,7 +328,7 @@ namespace Shipping {
             return t;
         }
         else if (type == fleetStr) {
-            Ptr<FleetRep> t = new FleetRep(name, this, network_);
+            Ptr<FleetRep> t = new FleetRep(name, this, network_->fleet());
             instance_[name] = t;
             return t;
         }
@@ -342,7 +347,7 @@ namespace Shipping {
     }
 
     void ManagerImpl::instanceDel(const string& name) {
-        map<string,Ptr<Instance> >::const_iterator t = instance_.find(name);
+        map<string,Ptr<Instance> >::iterator t = instance_.find(name);
         if (t == instance_.end()) {
             cerr << name << " does not exist as an instance\n";
         }

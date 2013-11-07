@@ -5,15 +5,15 @@
 #include "fwk/Exception.h"
 #include "fwk/BaseNotifiee.h"
 #include "fwk/NamedInterface.h"
-#include "fwk/HashMap.h"
 #include "fwk/String.h"
 #include "fwk/Ptr.h"
 #include "fwk/PtrInterface.h"
 #include "Instance.h"
 #include "Entity.h"
 #include "Nominal.h"
-
+#include <map>
 namespace Shipping {
+    using namespace std;
     //ordinal value types
     class Time : public Ordinal<Time, float> {
     public:
@@ -81,23 +81,18 @@ namespace Shipping {
         /* END NOTIFIEE IMPLEMENTATION ==============================================*/     
 
         //LOCATION ==============================================
-        typedef Fwk::HashMap<Location, Fwk::String, Location, Location::PtrConst, Location::Ptr> LocationDict;
         Location::Ptr locationNew( Location::Ptr l);
         Location::Ptr locationDel( Fwk::String _name );
-        Location const* location( Fwk::String _name) const { return location_[_name]; };
-        Location* location( Fwk::String _name) { return location_[_name]; };
+        Location* location( Fwk::String _name) { return location_[_name].ptr(); };
 
-        //SEGMENT ==============================================
-        typedef Fwk::HashMap<Segment, Fwk::String, Segment, Segment::PtrConst, Segment::Ptr> SegmentDict;
+        //SEGMENT =============================================
         Segment::Ptr segmentNew( Segment::Ptr s );
         Segment::Ptr segmentDel( Fwk::String _name );
-        Segment const* segment( Fwk::String _name) const { return segment_[_name]; };
-        Segment * segment( Fwk::String _name) { return segment_[_name]; };
+        Segment * segment( Fwk::String _name) { return segment_[_name].ptr(); };
 
         //FLEET ==============================================
         Fleet::Ptr fleetNew (Fwk::String _name);
         Fleet::Ptr fleetDel (Fwk::String _name); 
-        Fleet const* fleet() const {  return fleet_; };
         Fleet * fleet() { return fleet_; };
 
 
@@ -119,12 +114,12 @@ namespace Shipping {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = n;
         }
-        LocationDict location_;
-        SegmentDict segment_;
+        map<string,Location::Ptr> location_;
+        map<string,Segment::Ptr> segment_;
         Fleet* fleet_;
     };
 
-    class Percent : Ordinal<Percent,float>{
+    class Percent : public Ordinal<Percent,float>{
         Percent(float num):Ordinal<Percent,float>(num){
             if (num < 0) throw Fwk::RangeException("Percent");
         }
@@ -169,36 +164,6 @@ namespace Shipping {
         unsigned int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
     };
-
-    class Fleet : public Fwk::NamedInterface {
-    public:
-        typedef Fwk::Ptr<Fleet const> PtrConst;
-        typedef Fwk::Ptr<Fleet> Ptr;
-        Fleet::Ptr FleetNew(Fwk::String _name) {
-            Ptr m = new Fleet( _name );
-            return m;
-        }
-
-        Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
-        void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
-
-        Capacity capacity( ShippingMode m ) const{ return fleetmode[m].capacity_; }
-        void capacityIs (ShippingMode m, Capacity _capacity) { fleetmode[m].capacity_ = _capacity; }
-
-        Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
-        void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
-    protected:
-        struct FleetMode {
-            Speed speed_;
-            Capacity capacity_;
-            Cost cost_;
-            FleetMode():speed_(0),capacity_(0),cost_(0) {}
-        };
-        Fleet (const Fleet&);
-        explicit Fleet( Fwk::String _name): Fwk::NamedInterface(_name){ }
-        FleetMode fleetmode[MODE_COUNT];
-    };
-
 
 }
 
