@@ -347,7 +347,7 @@ namespace Shipping {
     }
 
     void ManagerImpl::instanceDel(const string& name) {
-        map<string,Ptr<Instance> >::const_iterator t = instance_.find(name);
+        map<string,Ptr<Instance> >::iterator t = instance_.find(name);
         if (t == instance_.end()) {
             cerr << name << " does not exist as an instance\n";
         }
