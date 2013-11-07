@@ -105,8 +105,9 @@ namespace Shipping {
             ExplorationQuery(float _dist, float _cost, float _time, bool _expedited) : 
                 maxDist(_dist),maxCost(_cost), maxTime(_time), expedited(_expedited) {};
         };
-        Fwk::String exploration( Fwk::String startLocation,  ExplorationQuery query); 
-        Fwk::String connection( Fwk::String startLocation, Fwk::String endLocation );
+
+        string path(Fwk::String startLocation, Fwk::String endLocation);
+        string path(Fwk::String startLocation, ExplorationQuery query);
     protected:
         ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0) {}
         ShippingNetwork::Notifiee * notifiee_;
@@ -114,9 +115,14 @@ namespace Shipping {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = n;
         }
+    private:
+        void explore(
+            Location* loc, Location* dst,
+            Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool explore) {
         map<string,Location::Ptr> location_;
         map<string,Segment::Ptr> segment_;
         Fleet* fleet_;
+
     };
 
     class Percent : public Ordinal<Percent,float>{
