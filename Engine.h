@@ -100,14 +100,9 @@ namespace Shipping {
             Cost maxCost;
             Time maxTime;
             bool expedited;
-            ExplorationQuery(float _dist, float _cost, float _time, bool _expedited) : 
-                maxDist(_dist),maxCost(_cost), maxTime(_time), expedited(_expedited) {};
+            ExplorationQuery() : maxDist(FLT_MAX),maxCost(FLT_MAX), maxTime(FLT_MAX), expedited(false) {}
         };
-        Fwk::String exploration( Fwk::String startLocation,  ExplorationQuery query); 
-        Fwk::String connection( Fwk::String startLocation, Fwk::String endLocation );
-        void explore(Location* loc, Location* dst, Mile max_dist, 
-                     Cost max_cost, Time max_time, bool expedited, bool explore);
-
+       
         string path(Fwk::String startLocation, Fwk::String endLocation);
         string path(Fwk::String startLocation, ExplorationQuery query);
     protected:
@@ -122,7 +117,7 @@ namespace Shipping {
     private:
         void explore(
             Location* loc, Location* dst,
-            Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool explore);
+            Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool exploration);
         map<string,Location::Ptr> location_;
         map<string,Segment::Ptr> segment_;
         Fleet* fleet_;

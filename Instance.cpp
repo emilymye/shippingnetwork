@@ -233,6 +233,10 @@ namespace Shipping {
         cerr << "cannot set attribute for Statistics" << endl;
     }
 
+
+    static const string exploreAttrStr = "explore";
+    static const string connectAttrStr = "connect";
+    static const unsigned int connTypeStrLen = exploreAttrStr.length();
     class ConnRep : public Instance {
     public:
         ConnRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
@@ -244,8 +248,52 @@ namespace Shipping {
         ShippingNetwork::Ptr network_;
     };
 
-    /*    string ConnRep::attribute(const string& name) {
-    }*/
+    string ConnRep::attribute(const string& name) {
+        if (name.length() <= connTypeStrLen){
+            return "";
+        } 
+
+        try {
+
+            string connType = name.substr(0,connTypeStrLen);
+            stringstream ss;
+            ss << name.substr(connTypeStrLen + 1);
+            string startLoc;
+            string token;
+            ss >> startLoc >> token; 
+
+            if (!connType.compare(exploreAttrStr)) {
+                ShippingNetwork::ExplorationQuery q;
+                while (!ss.eof()){
+                    ss >> token;
+                    int attrIdx = atoi(token.substr(4).c_str());
+
+                    switch (attrIdx) {
+                    case 0: ss >> token; q.maxDist = atof(token.c_str());
+                    case 1: ss >> token; q.maxCost = atof(token.c_str());
+                    case 2: ss >> token; q.maxTime = atof(token.c_str());
+                    case 3: q.expedited = true;
+                    default: break;
+                    }
+                }
+                return network_->path(startLoc,  q);
+            } else if (!connType.compare(connectAttrStr)) {
+                string endLoc;
+                ss >> endLoc;
+                return network_->path(startLoc, endLoc);
+            }
+
+        } catch (Fwk::Exception e) {
+            cerr << "Invalid attribute for Connection" << endl;
+            return "";
+        }
+
+        return "";
+    }
+
+    void ConnRep::attributeIs(const string& name, const string& v) {
+        cerr << "cannot set attribute for Connection" << endl;
+    }
 
     class FleetRep : public Instance {
     public:
@@ -257,6 +305,90 @@ namespace Shipping {
         Ptr<ManagerImpl> manager_;
         Fleet::Ptr fleet_;
     };
+
+    static const string truckStr = "Truck";
+    static const string boatStr = "Boat";
+    static const string planeStr = "Plane";
+    static const string speedStr = "speed";
+    static const string costStr = "cost";
+    static const string capacityStr = "capacity";
+
+    string FleetRep::attribute(const string& name) {
+        size_t idx = name.find(',');
+        if (idx!=std::string::npos) {
+            cerr << "invalid attribute for Fleet" << endl;
+            return "";
+        }
+
+        string mode = name.substr(0, idx);
+        string property = name.substr(idx + 2);
+
+        ShippingMode m;
+        if (!mode.compare("Truck")){
+            m = Fleet::truck();            
+        } else if (!mode.compare("Boat")){
+            m = Fleet::boat();
+        } else if (!mode.compare("Plane")){
+            m = Fleet::plane();
+        } else {
+            cerr << "invalid mode for Fleet attribute" << endl;
+            return "";
+        }
+
+        stringstream ss;
+        string str = "";
+        if (!property.compare(speedStr)){
+            ss.precision(2);
+            ss << fleet_->speed(m).value();
+        } else if (!property.compare(costStr)){
+            ss.precision(2);
+            ss << fleet_->cost(m).value();
+        } else if (!property.compare(capacityStr)){
+            ss << fleet_->capacity(m).value();
+        } else {
+            cerr << "invalid property for Fleet attribute" << endl;
+        }
+
+        ss >> str;
+        return str;
+    }
+
+    void FleetRep::attributeIs(const string& name, const string& v) {
+        size_t idx = name.find(',');
+        if (idx!=std::string::npos) {
+            cerr << "invalid attribute for Fleet" << endl;  
+            return;
+        }
+
+        string mode = name.substr(0, idx);
+        string property = name.substr(idx + 2);
+
+        ShippingMode m;
+        if (!mode.compare("Truck")){
+            m = Fleet::truck();            
+        } else if (!mode.compare("Boat")){
+            m = Fleet::boat();
+        } else if (!mode.compare("Plane")){
+            m = Fleet::plane();
+        } else {
+            cerr << "invalid mode for Fleet attribute" << endl;
+            return;
+        }
+
+        try{
+            if (!property.compare(speedStr)){
+                fleet_->speedIs(m,atof(v.c_str()));
+            } else if (!property.compare(costStr)){
+                fleet_->costIs(m,atof(v.c_str()));
+            } else if (!property.compare(capacityStr)){
+                fleet_->capacityIs(m,atoi(v.c_str()));
+            } 
+        } catch (Fwk::Exception e) {
+            cerr << "Error setting attribute " << name << " to " << v << endl;
+        } 
+
+
+    }
 
     ManagerImpl::ManagerImpl() {
         network_ = ShippingNetwork::ShippingNetworkNew("network");

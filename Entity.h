@@ -118,6 +118,7 @@ namespace Shipping{
          ~Location();
         Segment::PtrConst segment( int num ) const { return segment_[num]; }
         Segment::Ptr segment( int num ) { return segment_[num]; }
+        unsigned int segments() { return segment_.size(); }
         void segmentIs( Fwk::String segmentName ); //TODO
     protected:
         Location ( const Location&);
