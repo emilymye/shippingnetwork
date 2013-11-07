@@ -103,12 +103,18 @@ namespace Shipping {
             ExplorationQuery(float _dist, float _cost, float _time, bool _expedited) : 
                 maxDist(_dist),maxCost(_cost), maxTime(_time), expedited(_expedited) {};
         };
+        Fwk::String exploration( Fwk::String startLocation,  ExplorationQuery query); 
+        Fwk::String connection( Fwk::String startLocation, Fwk::String endLocation );
+        void explore(Location* loc, Location* dst, Mile max_dist, 
+                     Cost max_cost, Time max_time, bool expedited, bool explore);
 
         string path(Fwk::String startLocation, Fwk::String endLocation);
         string path(Fwk::String startLocation, ExplorationQuery query);
     protected:
         ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0) {}
         ShippingNetwork::Notifiee * notifiee_;
+        float segTravCost(Segment::Ptr, bool);
+        float segTravTime(Segment::Ptr, bool);
         void notifieeIs( ShippingNetwork::Notifiee *  n) const {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = n;
