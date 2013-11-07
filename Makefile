@@ -5,6 +5,15 @@ LIBS = fwk/BaseCollection.o fwk/BaseNotifiee.o fwk/Exception.o
 
 default: test1 example
 
+fwk/BaseCollection.o: fwk/BaseCollection.cpp fwk/BaseCollection.h
+	$(CXX) -c -o $@ $^
+
+fwk/BaseNotifiee.o: fwk/BaseNotifiee.cpp fwk/BaseNotifiee.h
+	$(CXX) -c -o $@ $^
+
+fwk/Exception.o: fwk/Exception.cpp fwk/Exception.h
+	$(CXX) -c -o $@ $^
+
 test1:	test1.o $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
