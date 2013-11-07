@@ -14,5 +14,7 @@ example:	example.o $(OBJECTS) $(LIBS)
 clean:
 	rm -f test1 test1.o $(OBJECTS) $(LIBS) *~
 
-Instance.o: Instance.cpp Instance.h Engine.h Engine.cpp Entity.h Entity.cpp
+
+
+Instance.o: Instance.cpp Instance.h Engine.h Engine.cpp Entity.h 
 test1.o: test1.cpp Instance.h
