@@ -44,12 +44,14 @@ namespace Shipping {
     // LOCATION INSTANCE ==========================
     class LocationRep : public Instance {
     public:
-        LocationRep(const string& name, ManagerImpl* manager, Ptr<Location> loc) : Instance(name),manager_(manager), loc_(loc){}
+        LocationRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr network) : 
+            Instance(name), manager_(manager), network_(network){}
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
-    private:
+    protected:
         Ptr<Location> loc_;
         Ptr<ManagerImpl> manager_;
+        Ptr<ShippingNetwork> network_;
         int segmentNumber(const string& name);
     };
 
@@ -83,32 +85,47 @@ namespace Shipping {
     //LOCATION INSTANCES SUBCLASSES
     class CustomerRep : public LocationRep {
     public:
-        CustomerRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
-            LocationRep(name, manager, _loc) { }
+        CustomerRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
+            LocationRep(name, manager, network) {
+            loc_ = CustomerLocation::CustomerLocationNew(name);
+            network_->locationNew(loc_);
+        }
     };
 
     class PortRep : public LocationRep {
     public:
-        PortRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
-            LocationRep(name, manager, _loc) { }
+        PortRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
+            LocationRep(name, manager, network) {
+            loc_ = PortLocation::PortLocationNew(name);
+            network_->locationNew(loc_);
+        }
     };
 
     class TruckTerminalRep : public LocationRep {
     public:
-        TruckTerminalRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
-            LocationRep(name, manager, _loc) { }
+        TruckTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
+            LocationRep(name, manager, network) {
+            loc_ = TruckTerminal::TruckTerminalNew(name);
+            network_->locationNew(loc_);
+        }
     };
 
     class BoatTerminalRep : public LocationRep {
     public:
-        BoatTerminalRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
-            LocationRep(name, manager, _loc) { }
+        BoatTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
+            LocationRep(name, manager, network) {
+            loc_ = BoatTerminal::BoatTerminalNew(name);
+            network_->locationNew(loc_);
+        }
     };
 
     class PlaneTerminalRep : public LocationRep {
     public:
-        PlaneTerminalRep(const string& name, ManagerImpl *manager, Location::Ptr _loc) : 
-            LocationRep(name, manager, _loc) { }
+        PlaneTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
+            LocationRep(name, manager, network) {
+            loc_ = PlaneTerminal::PlaneTerminalNew(name);
+            network_->locationNew(loc_);
+        }
     };
 
     // SEGMENT INSTANCE ==========================
@@ -400,34 +417,29 @@ namespace Shipping {
             return NULL;
 
         if (type == customerStr) {
-            Location::Ptr entity = network_->locationNew(CustomerLocation::CustomerLocationNew(name));
-            Ptr<CustomerRep> t = new CustomerRep(name, this, entity);
+            Ptr<CustomerRep> t = new CustomerRep(name, this);
             instance_[name] = t;
             return t;
         }
 
         if (type == portStr) {
-            Location::Ptr entity = network_->locationNew(PortLocation::PortLocationNew(name));
-            Ptr<PortRep> t = new PortRep(name, this, entity);
+            Ptr<PortRep> t = new PortRep(name, this);
             instance_[name] = t;
             return t;
         }
 
         else if (type == truckTerminalStr) {
-            Location::Ptr entity = network_->locationNew(TruckTerminal::TruckTerminalNew(name));
-            Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this, entity);
+            Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this);
             instance_[name] = t;
             return t;
         }
         else if (type == boatTerminalStr) {
-            Location::Ptr entity = network_->locationNew(BoatTerminal::BoatTerminalNew(name));
-            Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this, entity);
+            Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this);
             instance_[name] = t;
             return t;
         }
         else if (type == planeTerminalStr) {
-            Location::Ptr entity = network_->locationNew(PlaneTerminal::PlaneTerminalNew(name));
-            Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this, entity);
+            Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this);
             instance_[name] = t;
             return t;
         }
