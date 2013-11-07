@@ -216,11 +216,11 @@ namespace Shipping {
         } else if (name == boatTerminalStr) {
             ss << reactor_->shippingEntities( ShippingNetworkReactor::boatTerminal() );
         } else if (name == planeTerminalStr) {
-           ss << reactor_->shippingEntities( ShippingNetworkReactor::planeTerminal() );
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::planeTerminal() );
         } else if (name == truckSegmentStr) {
             ss << reactor_->shippingEntities( ShippingNetworkReactor::truckSegment() );
         } else if (name == boatSegmentStr) {
-           ss << reactor_->shippingEntities( ShippingNetworkReactor::boatSegment() );
+            ss << reactor_->shippingEntities( ShippingNetworkReactor::boatSegment() );
         } else if (name == planeSegmentStr) {
             ss << reactor_->shippingEntities( ShippingNetworkReactor::planeSegment() );
         }
@@ -244,7 +244,7 @@ namespace Shipping {
         ShippingNetwork::Ptr network_;
     };
 
-/*    string ConnRep::attribute(const string& name) {
+    /*    string ConnRep::attribute(const string& name) {
     }*/
 
     class FleetRep : public Instance {

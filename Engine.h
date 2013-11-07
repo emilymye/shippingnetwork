@@ -118,7 +118,7 @@ namespace Shipping {
     private:
         void explore(
             Location* loc, Location* dst,
-            Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool explore) {
+            Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool explore);
         map<string,Location::Ptr> location_;
         map<string,Segment::Ptr> segment_;
         Fleet* fleet_;
@@ -135,6 +135,7 @@ namespace Shipping {
     public:
         typedef Fwk::Ptr<ShippingNetworkReactor const> PtrConst;
         typedef Fwk::Ptr<ShippingNetworkReactor> Ptr;
+
         static ShippingNetworkReactor::Ptr ShippingNetworkReactorIs( ShippingNetwork* sn) {
             ShippingNetworkReactor::Ptr m = new ShippingNetworkReactor(sn);
             return m;
