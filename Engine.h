@@ -22,6 +22,8 @@ namespace Shipping {
         }
     };
 
+    class Fleet;
+
     class ShippingNetwork : public Fwk::NamedInterface {
     public:
         typedef Fwk::Ptr<ShippingNetwork const> PtrConst;

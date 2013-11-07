@@ -10,6 +10,7 @@
 #include "fwk/Ptr.h"
 #include "fwk/PtrInterface.h"
 #include "Instance.h"
+#include <vector>
 
 namespace Shipping{
     class Difficulty : public Ordinal<Difficulty,float> {
@@ -44,13 +45,13 @@ namespace Shipping{
     };
 
     enum ShippingMode {
-        Truck,
-        Boat,
-        Plane,
+        Truck_,
+        Boat_,
+        Plane_,
         MODE_COUNT //DO NOT MOVE
     };
 
-    class Location : Fwk::NamedInterface {}; 
+    class Location; 
 
     class Segment : public Fwk::NamedInterface {
     public: 
@@ -97,7 +98,7 @@ namespace Shipping{
     };
 
     // START LOCATION CLASSES ===============================================
-    class Location : Fwk::NamedInterface {
+    class Location : public Fwk::NamedInterface {
     public:
         typedef Fwk::Ptr<Location const> PtrConst;
         typedef Fwk::Ptr<Location> Ptr;
@@ -126,9 +127,9 @@ namespace Shipping{
         Fwk::String fwkKey() const { return name(); }
 
         ~Location();
-        typedef Fwk::LinkedList<Segment::Ptr> SegmentList;
-        Segment::PtrConst segment( int num ) const { return *(segment_[num]); }
-        Segment::Ptr segment( int num ) { return *(segment_[num]); }
+        typedef std::vector<Segment::Ptr> SegmentList;
+        Segment::PtrConst segment( int num ) const { return segment_[num]; }
+        Segment::Ptr segment( int num ) { return segment_[num]; }
         void segmentIs( Fwk::String segmentName ); //TODO
     protected:
         Location ( const Location&);
@@ -149,7 +150,7 @@ namespace Shipping{
         }
     protected:
         CustomerLocation (const CustomerLocation& );
-        CustomerLocation( Fwk::String _name) : Location(_name, LocationType::customer_) {}
+        CustomerLocation( Fwk::String _name) : Location(_name, Location::customer_) {}
     };
     class PortLocation : public Location {
     public:
@@ -161,7 +162,7 @@ namespace Shipping{
         }
     protected:
         PortLocation (const PortLocation& );
-        PortLocation( Fwk::String _name) : Location(_name, LocationType::port_) {}
+        PortLocation( Fwk::String _name) : Location(_name, Location::port_) {}
     };
     class Terminal : public Location {
     public:
@@ -174,7 +175,7 @@ namespace Shipping{
         ShippingMode mode() { return mode_; }
     protected:
         Terminal (const Terminal& );
-        Terminal( Fwk::String _name, ShippingMode _mode) : mode_(_mode), Location(_name, LocationType::port_) {}
+        Terminal( Fwk::String _name, ShippingMode _mode) : mode_(_mode), Location(_name, Location::port_) {}
         ShippingMode mode_;
     };
     // Terminal subclasses
@@ -188,7 +189,7 @@ namespace Shipping{
         }
     private:
         TruckTerminal (const TruckTerminal& );
-        TruckTerminal( Fwk::String _name) : Terminal (_name,ShippingMode::Truck){}
+        TruckTerminal( Fwk::String _name) : Terminal (_name,Shipping::Truck_){}
     };
     class BoatTerminal : public Terminal {
     public:
@@ -200,7 +201,7 @@ namespace Shipping{
         }
     private:
         BoatTerminal (const BoatTerminal& );
-        BoatTerminal( Fwk::String _name) : Terminal (_name,ShippingMode::Boat){}
+        BoatTerminal( Fwk::String _name) : Terminal (_name,Shipping::Boat_){}
     };
     class PlaneTerminal : public Terminal {
     public:
@@ -212,7 +213,7 @@ namespace Shipping{
         }
     private:
         PlaneTerminal (const PlaneTerminal& );
-        PlaneTerminal( Fwk::String _name) : Terminal(_name,ShippingMode::Plane){}
+        PlaneTerminal( Fwk::String _name) : Terminal(_name,Shipping::Plane_){}
     };
 
     // SEGMENT SUBCLASSES ==============================================
@@ -226,7 +227,7 @@ namespace Shipping{
         }
     protected:
         TruckSegment (const TruckSegment& );
-        TruckSegment( Fwk::String _name) : Segment(_name, ShippingMode::Truck) {}
+        TruckSegment( Fwk::String _name) : Segment(_name, Shipping::Truck_) {}
     };
     class BoatSegment : public Segment {
     public:
@@ -238,7 +239,7 @@ namespace Shipping{
         }
     protected:
         BoatSegment (const TruckSegment& );
-        BoatSegment( Fwk::String _name) : Segment(_name, ShippingMode::Boat) {}
+        BoatSegment( Fwk::String _name) : Segment(_name, Shipping::Boat_) {}
     };
     class PlaneSegment : public Segment {
     public:
@@ -250,7 +251,7 @@ namespace Shipping{
         }
     protected:
         PlaneSegment (const TruckSegment& );
-        PlaneSegment( Fwk::String _name) : Segment(_name, ShippingMode::Plane) {}
+        PlaneSegment( Fwk::String _name) : Segment(_name, Shipping::Plane_) {}
     };
 
     /******** ASSIGNMENT 3 CODE - disregard for now
