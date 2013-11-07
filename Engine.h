@@ -109,6 +109,9 @@ namespace Shipping {
         Fwk::String connection( Fwk::String startLocation, Fwk::String endLocation );
         void explore(Location* loc, Location* dst, Mile max_dist, 
                      Cost max_cost, Time max_time, bool expedited, bool explore);
+
+        string path(Fwk::String startLocation, Fwk::String endLocation);
+        string path(Fwk::String startLocation, ExplorationQuery query);
     protected:
         ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0) {}
         ShippingNetwork::Notifiee * notifiee_;
@@ -118,9 +121,14 @@ namespace Shipping {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = n;
         }
+    private:
+        void explore(
+            Location* loc, Location* dst,
+            Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool explore);
         map<string,Location::Ptr> location_;
         map<string,Segment::Ptr> segment_;
         Fleet* fleet_;
+
     };
 
     class Percent : public Ordinal<Percent,float>{
@@ -133,6 +141,7 @@ namespace Shipping {
     public:
         typedef Fwk::Ptr<ShippingNetworkReactor const> PtrConst;
         typedef Fwk::Ptr<ShippingNetworkReactor> Ptr;
+
         static ShippingNetworkReactor::Ptr ShippingNetworkReactorIs( ShippingNetwork* sn) {
             ShippingNetworkReactor::Ptr m = new ShippingNetworkReactor(sn);
             return m;

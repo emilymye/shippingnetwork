@@ -1,8 +1,10 @@
 #include "Engine.h"
+#include "Entity.h"
 #include <queue>
 #include <iostream>
 
 namespace Shipping {
+    using namespace std;
     ShippingNetwork::~ShippingNetwork(){
         
     
@@ -39,7 +41,7 @@ namespace Shipping {
     //        switch(a) {
     //        case NotifieeConst::version__: str = "version"; break;
     //        case NotifieeConst::notificationException__: str = "notificationException"; break;
-    //        case NotifieeConst::cell__: str = "cell"; break;
+    //        case NotifieeConst::cell__: str = "location"; break;
     //        default: str = Fwk::RootNotifiee::attributeString(a);
     //        }
     //        return str;
