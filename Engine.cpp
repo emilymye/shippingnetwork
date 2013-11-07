@@ -7,7 +7,7 @@ namespace Shipping {
     using namespace std;
     ShippingNetwork::~ShippingNetwork(){
         
-    
+
     }
     //----------| NotifieeConst Implementation |------------//
     ShippingNetwork::NotifieeConst::~NotifieeConst() {
@@ -33,6 +33,16 @@ namespace Shipping {
             }
     }
 
+    void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
+    }
+    void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) {
+    }
+    unsigned int ShippingNetworkReactor::shippingEntities(StatsEntityType type) {
+    }
+    Percent ShippingNetworkReactor::expeditedPercent() {
+        unsigned int segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
+        return Percent((float)expeditedSegments / segmentCount);
+    }
     //----------| Notifiee Implementation |------------//
 
     //Fwk::String

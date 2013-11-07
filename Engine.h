@@ -127,6 +127,7 @@ namespace Shipping {
     };
 
     class Percent : public Ordinal<Percent,float>{
+    public:
         Percent(float num):Ordinal<Percent,float>(num){
             if (num < 0) throw Fwk::RangeException("Percent");
         }
