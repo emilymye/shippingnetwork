@@ -136,7 +136,7 @@ namespace Shipping {
         }
         else if (!name.compare(lengthStr)) {
             char *str = new char[MAXDIGITS];
-            sprintf(str, "%.2f", seg_->length());
+            sprintf(str, "%.2f", seg_->length().value());
             return str;
         }
         else if (!name.compare(returnSegStr)) {
@@ -145,7 +145,7 @@ namespace Shipping {
 
         else if (!name.compare(difficultyStr)) {
             char *str = new char[MAXDIGITS];
-            sprintf(str, "%.2f", seg_->difficulty());
+            sprintf(str, "%.2f", seg_->difficulty().value());
             return str;
         }
         else if (!name.compare(expSupportStr)) {
