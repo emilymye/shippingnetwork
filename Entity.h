@@ -242,9 +242,12 @@ namespace Shipping{
         PlaneSegment( Fwk::String _name) : Segment(_name, Shipping::Plane_) {}
     };
 
-
     class Fleet : public Fwk::NamedInterface {
     public:
+        static const ShippingMode truck() {return Truck_;}
+        static const ShippingMode boat() {return Boat_;}
+        static const ShippingMode plane() {return Plane_;}
+
         typedef Fwk::Ptr<Fleet const> PtrConst;
         typedef Fwk::Ptr<Fleet> Ptr;
         Fleet::Ptr FleetNew(Fwk::String _name) {
@@ -291,9 +294,7 @@ namespace Shipping{
     Capacity packages_;
     Location* source;
     Location* destination;
-    } 
-
-    */
+    } */
 
 } /* end namespace */
 #endif
