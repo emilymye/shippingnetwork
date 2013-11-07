@@ -131,7 +131,7 @@ namespace Shipping {
     // SEGMENT INSTANCE ==========================
     class SegmentRep : public Instance {
     public:
-        SegmentRep(const string& name, ManagerImpl* manager, Segment::Ptr segment, ShippingNetwork::Ptr sn) : Instance(name), manager_(manager), sn_(sn){}
+        SegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) : Instance(name), manager_(manager), sn_(sn){}
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
     private:
@@ -190,20 +190,29 @@ namespace Shipping {
 
     class TruckSegmentRep : public SegmentRep {
     public:
-        TruckSegmentRep(const string& name, ManagerImpl* manager, Segment::Ptr seg, ShippingNetwork::Ptr sn) :
-            SegmentRep(name, manager,seg,sn) {}
+        TruckSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
+            SegmentRep(name, manager, sn) {
+            seg_ = TruckSegment::TruckSegmentNew(name);
+            sn_->segmentNew(seg_);
+        }
     };
 
     class BoatSegmentRep : public SegmentRep {
     public:
-        BoatSegmentRep(const string& name, ManagerImpl* manager, Segment::Ptr seg, ShippingNetwork::Ptr sn) :
-            SegmentRep(name, manager,seg,sn) {}
+        BoatSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
+            SegmentRep(name, manager, sn) {
+            seg_ = BoatSegment::BoatSegmentNew(name);
+            sn_->segmentNew(seg_);
+        }
     };
 
     class PlaneSegmentRep : public SegmentRep {
     public:
-        PlaneSegmentRep(const string& name, ManagerImpl* manager, Segment::Ptr seg, ShippingNetwork::Ptr sn) :
-            SegmentRep(name, manager,seg,sn) {}
+        PlaneSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
+            SegmentRep(name, manager, sn) {
+            seg_ = PlaneSegment::PlaneSegmentNew(name);
+            sn_->segmentNew(seg_);
+        }
     };
 
     class StatsRep : public Instance {
@@ -417,47 +426,44 @@ namespace Shipping {
             return NULL;
 
         if (type == customerStr) {
-            Ptr<CustomerRep> t = new CustomerRep(name, this);
+            Ptr<CustomerRep> t = new CustomerRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
 
         if (type == portStr) {
-            Ptr<PortRep> t = new PortRep(name, this);
+            Ptr<PortRep> t = new PortRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
 
         else if (type == truckTerminalStr) {
-            Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this);
+            Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
         else if (type == boatTerminalStr) {
-            Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this);
+            Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
         else if (type == planeTerminalStr) {
-            Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this);
+            Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
         else if (type == truckSegmentStr) {
-            Segment::Ptr entity = network_->segmentNew(TruckSegment::TruckSegmentNew(name));
-            Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, entity, network_);
+            Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
         else if (type == boatSegmentStr) {
-            Segment::Ptr entity = network_->segmentNew(BoatSegment::BoatSegmentNew(name));
-            Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, entity, network_);
+            Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
         else if (type == planeSegmentStr) {
-            Segment::Ptr entity = network_->segmentNew(PlaneSegment::PlaneSegmentNew(name));
-            Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, entity, network_);
+            Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, network_);
             instance_[name] = t;
             return t;
         }
