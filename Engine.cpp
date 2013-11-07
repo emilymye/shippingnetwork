@@ -1,4 +1,6 @@
 #include "Engine.h"
+#include <queue>
+#include <iostream>
 
 namespace Shipping {
     ShippingNetwork::~ShippingNetwork(){
@@ -43,23 +45,29 @@ namespace Shipping {
     //        return str;
     //}
 
+    /* Explore - explore:true, loc:start location, dst:NULL, 
+                 if not needed , set max_dist:FLT_MAX, max_cost:FLT_MAX, max_time:FLT_MAX, expedited:false
+       Connect - explore:false, loc:start location, dst:end location,
+                 max_dist, max_cost, max_time can be any value. If not needed, set expedited:false*/
+    typedef struct Node {
+        Location *loc;
+        string *path;
+        float dist;
+        float cost;
+        float time;
+    } Node_T;
+
+
     void ShippingNetwork::explore(Location* loc, Location* dst, Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool explore) {
-        typedef struct Node {
-            Location *loc;
-            string *path;
-            Mile dist;
-            Cost cost;
-            Time time;
-        } Node_T;
         map<string, bool> nodes_traversed;
-        queue<Node_T> search_queue;
-        Node_t node;
+        std::queue<Node_T> search_queue;
+        Node_T node;
         node.loc = loc;
         node.path = new string(loc->name());
-        node.distance = 0;
-        node.cost = 0;
-        node.time = 0;
-        search_queue.push(Node_T);
+        node.dist = 0.0;
+        node.cost = 0.0;
+        node.time = 0.0;
+        search_queue.push(node);
         nodes_traversed[loc->name()] = true;
 
         int pass;
@@ -80,16 +88,16 @@ namespace Shipping {
                 search_queue.pop();
                 if (!explore && current_loc == dst) { // print path
                     if (pass == 0) { // non-expedited
-                        cout << current_cost << ' ' << current_time << " no; " << *current_path << endl;
+                        std::cout << (float)current_cost << ' ' << current_time << " no; " << *current_path << endl;
                     }
                     else { //expedited
-                        cout << current_cost << ' ' << current_time << " yes; " << *current_path << endl;
+                        std::cout << current_cost << ' ' << current_time << " yes; " << *current_path << endl;
                     }
                 }
 
                 bool newNode = false;
-                for (int i = 0; i < current_loc->segment_->size(); i++) {
-                    Segment *seg = current_loc->segment_[i];
+                for (unsigned int i = 0; i < current_loc->num_segments(); i++) {
+                    Segment::Ptr seg = current_loc->segment(i);
                     if (pass == 1 && !seg->expediteSupport()) {
                         continue;
                     }
@@ -117,46 +125,46 @@ namespace Shipping {
                     if (nodes_traversed.find(seg_end->name()) == map::end) {
                         nodes_traversed[seg_end->name()] = true;
                         Node_T node;
-                        node->loc = seg_end;
-                        node->path = new string(*current_path);
-                        node->path->append("("+seg->name()+":"+seg->length()+":"+seg->name()+") "+seg_end->name());
-                        node->dist = current_dist + seg->length();
+                        node.loc = seg_end;
+                        node.path = new string(*current_path);
+                        node.path->append("("+seg->name().String()+":"+seg->length().value()+":"+seg->name().String()+") "+seg_end->name().String());
+                        node.dist = current_distance.value() + seg->length().value();
                         if (pass == 0) { // non-expedited
-                            node->cost = current_cost + segTravCost(seg, false);
-                            node->time = current_time + segTravTime(seg, false);
+                            node.cost = current_cost.value() + segTravCost(seg, false);
+                            node.time = current_time.value() + segTravTime(seg, false);
                         }
                         else { // expedited
-                            node->cost = current_cost + segTravCost(seg, true);
-                            node->time = current_time + segTravTime(seg, true);
+                            node.cost = current_cost.value() + segTravCost(seg, true);
+                            node.time = current_time.value() + segTravTime(seg, true);
                         }
-                        search_queue.push(seg_end);
-                        new_node = true;
+                        search_queue.push(node);
+                        newNode = true;
                     }
                 }
 
-                if (explore && !new_node) { // print path
-                    cout << *current_path << endl;
+                if (explore && !newNode) { // print path
+                    std::cout << *current_path << endl;
                 }
                 delete current_path;
             }
         }
     }
 
-Cost segTravCost(Segment* seg, bool expedited) {
+float ShippingNetwork::segTravCost(Segment::Ptr seg, bool expedited) {
     if (seg->expediteSupport() && expedited) {
-        return seg->length() * (fleet()->cost(seg->mode()) * 1.5);
+        return seg->length().value() * (fleet()->cost(seg->mode()).value() * 1.5);
     }
     else {
-        return seg->length() * fleet()->cost(seg->mode());
+        return seg->length().value() * fleet()->cost(seg->mode()).value();
     }
 }
 
-Time segTravTime(Segment* seg, bool expedited) {
+float ShippingNetwork::segTravTime(Segment::Ptr seg, bool expedited) {
     if (seg->expediteSupport() && expedited) {
-        return seg->length() / (fleet()->speed(seg->mode()) * 1.3);
+        return seg->length().value() / (fleet()->speed(seg->mode()).value() * 1.3);
     }
     else {
-        return seg->length() / fleet()->speed(seg->mode());
+        return seg->length().value() / fleet()->speed(seg->mode()).value();
     }
 }
 
