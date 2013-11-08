@@ -156,12 +156,11 @@ namespace Shipping {
     max_dist, max_cost, max_time can be any value. If not needed, set expedited:false*/
     string ShippingNetwork::explore(Location* loc, Location* dst, Mile max_dist, Cost max_cost, 
         Time max_time, bool expedited, bool exploration) {
-            std::stringstream ss;
             map<string, bool> nodes_traversed;
             std::queue<Node_T> search_queue;
 
-            std::stringstream append_ss; 
-            string appendStr = "";
+            std::stringstream ss;
+
             int pass;
             if (exploration && expedited) {
                 pass = 1;
@@ -229,11 +228,10 @@ namespace Shipping {
                             node.loc = seg_end;
                             node.path = new string(*current_path);
 
-                            append_ss.flush();
+                            stringstream append_ss;
                             append_ss.precision(2);
                             append_ss << "(" << seg->name() << ":" << fixed << seg->length().value() << ":" << seg->name() << ") " << seg_end->name();
-                            appendStr = append_ss.str();
-//                            cout << "@@@@@\n" << appendStr << "\n@@@@@\n";
+                            string appendStr = append_ss.str();
                             node.path->append(appendStr);
                             node.dist = current_distance.value() + seg->length().value();
                             if (pass == 0) { // non-expedited
