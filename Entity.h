@@ -75,10 +75,10 @@ namespace Shipping{
 
         Mile length() const { return length_; }
         void lengthIs( Mile newLength ) { length_ = newLength; }
-        
+
         Difficulty difficulty() const { return difficulty_; }
         void difficultyIs(Difficulty d)  { difficulty_ = d; }
-        
+
         bool expediteSupport() const { return expediteSupport_; }
         void expediteSupportIs( bool support ) { expediteSupport_ = support; }
     protected:
@@ -111,6 +111,7 @@ namespace Shipping{
         };
         static inline LocationType customer() { return customer_; }
         static inline LocationType port() { return port_; }
+        static inline LocationType terminalIdx() { return truckTerminal_;}
         static inline LocationType truckTerminal() { return truckTerminal_; }
         static inline LocationType boatTerminal() { return boatTerminal_; }
         static inline LocationType planeTerminal() { return planeTerminal_; }
@@ -175,29 +176,11 @@ namespace Shipping{
         }
     protected:
         PortLocation (const PortLocation& );
-        PortLocation( Fwk::String _name) : Location(_name, Location::port_) {}
+        PortLocation( Fwk::String _name) : Location(_name,port_) {}
     };
-    class Terminal : public Location {
-    public:
-        typedef Fwk::Ptr<Terminal const> PtrConst;
-        typedef Fwk::Ptr<Terminal> Ptr;
-        static Terminal::Ptr TerminalNew( Fwk::String _name , ShippingMode _mode ) {
-            Ptr m = new Terminal(_name, _mode);
-            return m;
-        }
-        ShippingMode mode() { return mode_; }
-        Segment::Ptr segmentNew ( Segment::Ptr seg ){ 
-            if (mode() != seg->mode()) return 0; 
-            segment_.push_back(seg); 
-            return seg;
-        }
-    protected:
-        ShippingMode mode_;
-        Terminal (const Terminal& );
-        Terminal( Fwk::String _name, ShippingMode _mode) : mode_(_mode), Location(_name, Location::port_) {}
-    };
+
     // Terminal subclasses
-    class TruckTerminal : public Terminal {
+    class TruckTerminal : public Location {
     public:
         typedef Fwk::Ptr<TruckTerminal const> PtrConst;
         typedef Fwk::Ptr<TruckTerminal> Ptr;
@@ -207,9 +190,9 @@ namespace Shipping{
         }
     private:
         TruckTerminal (const TruckTerminal& );
-        TruckTerminal( Fwk::String _name) : Terminal (_name,Shipping::Truck_){}
+        TruckTerminal( Fwk::String _name) : Location (_name,truckTerminal_){}
     };
-    class BoatTerminal : public Terminal {
+    class BoatTerminal : public Location {
     public:
         typedef Fwk::Ptr<BoatTerminal const> PtrConst;
         typedef Fwk::Ptr<BoatTerminal> Ptr;
@@ -219,9 +202,9 @@ namespace Shipping{
         }
     private:
         BoatTerminal (const BoatTerminal& );
-        BoatTerminal( Fwk::String _name) : Terminal (_name,Shipping::Boat_){}
+        BoatTerminal( Fwk::String _name) : Location (_name,boatTerminal_){}
     };
-    class PlaneTerminal : public Terminal {
+    class PlaneTerminal : public Location {
     public:
         typedef Fwk::Ptr<PlaneTerminal const> PtrConst;
         typedef Fwk::Ptr<PlaneTerminal> Ptr;
@@ -231,7 +214,7 @@ namespace Shipping{
         }
     private:
         PlaneTerminal (const PlaneTerminal& );
-        PlaneTerminal( Fwk::String _name) : Terminal(_name,Shipping::Plane_){}
+        PlaneTerminal( Fwk::String _name) : Location(_name,planeTerminal_){}
     };
 
     // SEGMENT SUBCLASSES ==============================================
