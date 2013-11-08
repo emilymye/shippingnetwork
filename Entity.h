@@ -283,7 +283,7 @@ namespace Shipping{
             Speed speed_;
             Capacity capacity_;
             Cost cost_;
-            FleetMode():speed_(0),capacity_(0),cost_(0) {}
+            FleetMode():speed_(50),capacity_(10),cost_(1) {}
         };
         Fleet (const Fleet&);
         explicit Fleet( Fwk::String _name): Fwk::NamedInterface(_name){ }
