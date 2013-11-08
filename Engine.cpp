@@ -159,14 +159,6 @@ namespace Shipping {
             std::stringstream ss;
             map<string, bool> nodes_traversed;
             std::queue<Node_T> search_queue;
-            Node_T node;
-            node.loc = loc;
-            node.path = new string(loc->name());
-            node.dist = 0.0;
-            node.cost = 0.0;
-            node.time = 0.0;
-            search_queue.push(node);
-            nodes_traversed[loc->name()] = true;
 
             std::stringstream append_ss; 
             string appendStr = "";
@@ -179,6 +171,15 @@ namespace Shipping {
             }
             /* traverse (at most) two times. First time non-expedited, second time (if requested) expedited */
             for (; pass < 2; pass++) { // pass=0:non-expedited  pass=1:expedited
+                Node_T node;
+                node.loc = loc;
+                node.path = new string(loc->name());
+                node.dist = 0.0;
+                node.cost = 0.0;
+                node.time = 0.0;
+                search_queue.push(node);
+                nodes_traversed.erase(nodes_traversed.begin(), nodes_traversed.end());
+                nodes_traversed[loc->name()] = true;
                 while (!search_queue.empty()) {
                     Location *current_loc = search_queue.front().loc;
                     string *current_path = search_queue.front().path;
@@ -230,9 +231,10 @@ namespace Shipping {
 
                             append_ss.flush();
                             append_ss.precision(2);
-                            append_ss << "(" << seg->name() << ":" << seg->length().value() << ":" << seg->name() << ") " << seg_end->name();
+                            append_ss << "(" << seg->name() << ":" << fixed << seg->length().value() << ":" << seg->name() << ") " << seg_end->name();
                             appendStr = "";
                             append_ss >> appendStr;
+//                            cout << "*****\n" << appendStr << "****\n";
                             node.path->append(appendStr);
                             node.dist = current_distance.value() + seg->length().value();
                             if (pass == 0) { // non-expedited
