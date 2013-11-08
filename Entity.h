@@ -132,7 +132,10 @@ namespace Shipping{
             return segment_[num - 1]; 
         }
         unsigned int segments() { return segment_.size(); }
-        void segmentNew ( Segment::Ptr seg ){ segment_.push_back(seg); }
+        Segment::Ptr segmentNew ( Segment::Ptr seg ){ 
+            segment_.push_back(seg); 
+            return seg;
+        }
         void segmentDel( Segment::Ptr seg ) { 
             for (int i = 0; i < segment_.size(); i++){
                 if (segment_[i] == seg){
@@ -183,6 +186,11 @@ namespace Shipping{
             return m;
         }
         ShippingMode mode() { return mode_; }
+        Segment::Ptr segmentNew ( Segment::Ptr seg ){ 
+            if (mode() != seg->mode()) return 0; 
+            segment_.push_back(seg); 
+            return seg;
+        }
     protected:
         ShippingMode mode_;
         Terminal (const Terminal& );
