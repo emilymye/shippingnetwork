@@ -214,10 +214,13 @@ namespace Shipping {
                     cerr << "invalid location for Segment source" << endl;
                     return;
                 }
-                if (source_->segmentNew(seg_)) 
-                    seg_->sourceIs( sn_->location(v) );
-                else 
-                    cerr << "Terminal cannot be different mode than segment" << endl;
+                if (source_->type()  <= Location::port() || source_->type() - Location::port() == seg_->mode() ) {
+                    if (source_->segmentNew(seg_)) 
+                        seg_->sourceIs( sn_->location(v));
+                } else {
+                    cerr << "cannot attach segment of this mode to location" << endl; 
+                    return;
+                }
             } else if (!name.compare(lengthStr)) {
                 seg_->lengthIs(atof(v.c_str()));
             } else if (!name.compare(returnSegStr)) {
