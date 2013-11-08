@@ -24,6 +24,12 @@ namespace Shipping {
         ShippingNetwork::Ptr notifierSave(const_cast<ShippingNetwork *>(notifier_.ptr()));
         if(_notifier==notifier_) return;
         notifier_ = _notifier;
+        if(notifierSave) {
+            notifierSave->deleteNotifiee(this);
+        }
+        if(_notifier) {
+            _notifier->newNotifiee(this);
+        }
         if(isNonReferencing_) {
             if(notifierSave) notifierSave->newRef();
             if(notifier_) notifier_->deleteRef();
@@ -41,9 +47,11 @@ namespace Shipping {
 
     // ----------| Attribute Implementation | --------//
     Location::Ptr ShippingNetwork::locationNew( Location::Ptr loc){
-        if (locationMap.find(loc->name()) == locationMap.end()) return 0;
+        if (locationMap.find(loc->name()) != locationMap.end()) return 0;
         locationMap[loc->name()] = loc;
-        notifiee_->onLocationNew(loc);
+        if (notifiee_) {
+            notifiee_->onLocationNew(loc);
+        }
         return loc;
     }
     void ShippingNetwork::locationDel( Fwk::String _name ){
@@ -52,20 +60,22 @@ namespace Shipping {
         for (unsigned int i = 1; i <= l->segments(); i++){
             l->segment(i)->sourceIs(0);
         }
-        notifiee_->onLocationDel(l);
+        if (notifiee_) {
+            notifiee_->onLocationDel(l);
+        }
         locationMap.erase(_name);
     }
     Segment::Ptr ShippingNetwork::segmentNew( Segment::Ptr seg ){
-        if (segmentMap.find(seg->name()) == segmentMap.end()) return 0;
+        if (segmentMap.find(seg->name()) != segmentMap.end()) return 0;
         segmentMap[seg->name()] = seg;
-        notifiee_->onSegmentNew(seg);
+        if (notifiee_) notifiee_->onSegmentNew(seg);
         return seg;
     }
     void ShippingNetwork::segmentDel( Fwk::String _name ){
         if (segmentMap.find(_name) == segmentMap.end()) return;
         Segment::Ptr s = segmentMap[_name];
         s->source()->segmentDel(s);
-        notifiee_->onSegmentDel(s);
+        if (notifiee_) notifiee_->onSegmentDel(s);
         segmentMap.erase(_name);
     }
 
@@ -123,7 +133,7 @@ namespace Shipping {
     }
     unsigned int ShippingNetworkReactor::shippingEntities(StatsEntityType type) {
         if (type >= SHIPPING_ENTITY_COUNT) return 0;
-            return entityCounts[type];
+        return entityCounts[type];
     }
     Percent ShippingNetworkReactor::expeditedPercent() {
         float segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];

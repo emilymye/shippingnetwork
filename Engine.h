@@ -84,7 +84,7 @@ namespace Shipping {
         protected:
             Notifiee(): Fwk::NamedInterface::Notifiee() {}
         };
-        ShippingNetwork::Notifiee * notifiee() const {return notifiee_;}
+        ShippingNetwork::NotifieeConst* notifiee() const {return notifiee_;}
         /* END NOTIFIEE IMPLEMENTATION ==============================================*/     
 
         //LOCATION ==============================================
@@ -111,15 +111,26 @@ namespace Shipping {
             bool expedited;
             ExplorationQuery() : maxDist(FLT_MAX),maxCost(FLT_MAX), maxTime(FLT_MAX), expedited(false) {}
         };
-       
+
         string path(Fwk::String startLocation, Fwk::String endLocation);
         string path(Fwk::String startLocation, ExplorationQuery query);
     protected:
         ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0) {}
-        ShippingNetwork::Notifiee * notifiee_;
+        ShippingNetwork::NotifieeConst * notifiee_;
+
+        void newNotifiee( ShippingNetwork::NotifieeConst * n ) const {
+            ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
+            me->notifiee_ = n;
+        }
+        void deleteNotifiee( ShippingNetwork::NotifieeConst * n ) const {
+            ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
+            me->notifiee_ = 0;
+        }
+
+
         float segTravCost(Segment::Ptr, bool);
         float segTravTime(Segment::Ptr, bool);
-        void notifieeIs( ShippingNetwork::Notifiee *  n) const {
+        void notifieeIs( ShippingNetwork::Notifiee * n) const {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = n;
         }
@@ -161,7 +172,7 @@ namespace Shipping {
             planeSegment_,
             SHIPPING_ENTITY_COUNT
         };
-        
+
         void onLocationNew(Location::Ptr loc);
         void onSegmentNew(Segment::Ptr seg);
         void onLocationDel(Location::Ptr loc);

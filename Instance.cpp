@@ -66,7 +66,7 @@ namespace Shipping {
             }
         }
 
-        cerr << "Invalid attribute: " << name << endl;
+        cerr << "Invalid attribute for Location: " << name << endl;
         return "";
     }
 

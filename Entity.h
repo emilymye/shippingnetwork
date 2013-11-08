@@ -84,7 +84,7 @@ namespace Shipping{
     protected:
         Segment (const Segment&);
         Segment(Fwk::String _name, ShippingMode _mode) : 
-            Fwk::NamedInterface(_name), mode_(_mode), length_(0.f),difficulty_(0.f) {}
+            Fwk::NamedInterface(_name), mode_(_mode), length_(0.f),difficulty_(1.f) {}
         mutable Segment::Ptr fwkHmNext_; 
 
         ShippingMode mode_;
