@@ -284,7 +284,7 @@ namespace Shipping {
         stringstream ss;
         if (!name.compare(expPercentStr)) {
             ss.precision(2);
-            ss << reactor_->expeditedPercent().value();
+            ss << fixed << reactor_->expeditedPercent().value();
         } else if (name == customerStr) {
             ss << reactor_->shippingEntities( ShippingNetworkReactor::customer() );
         } else if (name == portStr) {
@@ -417,10 +417,10 @@ namespace Shipping {
         string str = "";
         if (!property.compare(speedStr)){
             ss.precision(2);
-            ss << fleet_->speed(m).value();
+            ss << fixed << fleet_->speed(m).value();
         } else if (!property.compare(costStr)){
             ss.precision(2);
-            ss << fleet_->cost(m).value();
+            ss << fixed << fleet_->cost(m).value();
         } else if (!property.compare(capacityStr)){
             ss << fleet_->capacity(m).value();
         } else {

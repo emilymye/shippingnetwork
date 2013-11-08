@@ -94,6 +94,7 @@ namespace Shipping {
         return explore(locationMap[startLocation].ptr(),locationMap[endLocation].ptr(),
             0.f, 0.f, 0.f,false,false);
     }
+
     string ShippingNetwork::path(Fwk::String startLocation, ExplorationQuery q){
         Location* loc = locationMap[startLocation].ptr();
         return explore(loc, 0, q.maxDist,q.maxCost,q.maxTime,q.expedited,true);
@@ -106,7 +107,7 @@ namespace Shipping {
     }
 
     void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) {        
-        if (seg->mode() - Truck_) {
+        if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]++;
         }
         else if (seg->mode() == Boat_) {
@@ -115,13 +116,16 @@ namespace Shipping {
         else if (seg->mode() == Plane_) {
             entityCounts[planeSegment_]++;
         }
-        if (seg->expediteSupport()) expeditedSegments++;
+        if (seg->expediteSupport()) 
+            expeditedSegments++;
+        segmentreactors[seg->name()] = SegmentReactor::SegmentReactorIs(seg.ptr(), this);
     }
 
     void ShippingNetworkReactor::onLocationDel(Location::Ptr loc) {
         if (loc->type() == loc->other()) return;
         entityCounts[loc->customer() + loc->type()]--;
     }
+
     void ShippingNetworkReactor::onSegmentDel(Segment::Ptr seg) {
         if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]--;
@@ -131,14 +135,16 @@ namespace Shipping {
             entityCounts[planeSegment_]--;
         }
         if (seg->expediteSupport()) expeditedSegments--;
+        segmentreactors.erase(seg->name());
     }
     unsigned int ShippingNetworkReactor::shippingEntities(StatsEntityType type) {
         if (type >= SHIPPING_ENTITY_COUNT) return 0;
         return entityCounts[type];
     }
+
     Percent ShippingNetworkReactor::expeditedPercent() {
-        float segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
-        return Percent((float) expeditedSegments / segmentCount);
+        unsigned int segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
+        return (100.f * (float) expeditedSegments / (float) segmentCount);
     }
 
     //----------| PRIVATE CALLS |----//
@@ -148,6 +154,7 @@ namespace Shipping {
         float dist;
         float cost;
         float time;
+        Node (Location * l, string * p) : loc(l), path(p), dist(0.f), cost(0.f), time(0.f) {}
     } Node_T;
 
     /* Explore - explore:true, loc:start location, dst:NULL, 
@@ -160,25 +167,16 @@ namespace Shipping {
             std::queue<Node_T> search_queue;
 
             std::stringstream ss;
+            int pass = (exploration && expedited) ? 1 : 0; 
 
-            int pass;
-            if (exploration && expedited) {
-                pass = 1;
-            }
-            else {
-                pass = 0;
-            }
             /* traverse (at most) two times. First time non-expedited, second time (if requested) expedited */
             for (; pass < 2; pass++) { // pass=0:non-expedited  pass=1:expedited
-                Node_T node;
-                node.loc = loc;
-                node.path = new string(loc->name());
-                node.dist = 0.0;
-                node.cost = 0.0;
-                node.time = 0.0;
+                Node_T node = Node_T(loc, new string (loc->name()));
                 search_queue.push(node);
+
                 nodes_traversed.erase(nodes_traversed.begin(), nodes_traversed.end());
                 nodes_traversed[loc->name()] = true;
+
                 while (!search_queue.empty()) {
                     Location *current_loc = search_queue.front().loc;
                     string *current_path = search_queue.front().path;
@@ -186,12 +184,19 @@ namespace Shipping {
                     Cost current_cost = search_queue.front().cost;
                     Time current_time = search_queue.front().time;
                     search_queue.pop();
+
                     if (!exploration && current_loc == dst) { // print path
-                        if (pass == 0) { // non-expedited
-                            ss << current_cost.value() << ' ' << current_time.value() << " no; " << *current_path << endl;
+                        if (!pass) { // non-expedited
+                            ss.precision(2);
+                            ss << fixed << current_cost.value() << ' ';
+                            ss.precision(4);
+                            ss << fixed << current_time.value() << " no; " << *current_path << endl;
                         }
                         else { //expedited
-                            ss << current_cost.value() << ' ' << current_time.value() << " yes; " << *current_path << endl;
+                            ss.precision(2);
+                            ss << fixed << current_cost.value() << ' ';
+                            ss.precision(4);
+                            ss << fixed << current_time.value() << " yes; " << *current_path << endl;
                         }
                     }
 
@@ -204,33 +209,26 @@ namespace Shipping {
                         if (exploration && (current_distance + seg->length() > max_dist)) { // distance
                             continue;
                         }
-                        if (pass == 0) { // non-expedited
-                            if (exploration && (current_cost + segTravCost(seg, false) > max_cost)) { // cost
-                                continue;
+                        if (!pass) { // non-expedited
+                            if ( (exploration && (current_cost + segTravCost(seg, false) > max_cost)) || // cost
+                                (exploration && (current_time + segTravTime(seg, false) > max_time)) ) { // time
+                                    continue;
                             }
-                            if (exploration && (current_time + segTravTime(seg, false) > max_time)) { // time
-                                continue;
-                            }
-                        }
-                        else { // expedited
-                            if (exploration && (current_cost + segTravCost(seg, true) > max_cost)) { // cost
-                                continue;
-                            }
-                            if (exploration && (current_time + segTravTime(seg, true) > max_time)) { // time
-                                continue;
+                        } else { // expedited
+                            if ((exploration && (current_cost + segTravCost(seg, true) > max_cost)) || // cost
+                                (exploration && (current_time + segTravTime(seg, true) > max_time))) { // time
+                                    continue;
                             }
                         }
 
                         Location *seg_end = seg->returnSegment()->source();
                         if (nodes_traversed.find(seg_end->name()) == nodes_traversed.end()){
                             nodes_traversed[seg_end->name()] = true;
-                            Node_T node;
-                            node.loc = seg_end;
-                            node.path = new string(*current_path);
-
+                            Node_T node (seg_end, new string(*current_path));
                             stringstream append_ss;
                             append_ss.precision(2);
-                            append_ss << "(" << seg->name() << ":" << fixed << seg->length().value() << ":" << seg->name() << ") " << seg_end->name();
+                            append_ss << "(" << seg->name() << ":" << fixed << seg->length().value() << 
+                                ":" << seg->name() << ") " << seg_end->name();
                             string appendStr = append_ss.str();
                             node.path->append(appendStr);
                             node.dist = current_distance.value() + seg->length().value();
@@ -244,11 +242,11 @@ namespace Shipping {
                             }
                             search_queue.push(node);
                             newNode = true;
-                        }
-                    }
 
-                    if (exploration && !newNode) { // print path
-                        ss << *current_path << endl;
+                            if (exploration) { // print path
+                                ss <<  *(node.path) << endl;
+                            }
+                        }
                     }
                     delete current_path;
                 }

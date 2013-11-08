@@ -63,6 +63,56 @@ namespace Shipping{
         }
         ~Segment() { }
 
+        class NotifieeConst : public virtual Fwk::NamedInterface::NotifieeConst {
+        public:
+            typedef Fwk::Ptr<NotifieeConst const> PtrConst;
+            typedef Fwk::Ptr<NotifieeConst> Ptr;
+            Fwk::String name() const { return (notifier_?notifier_->name():Fwk::String()); }
+            Segment::PtrConst notifier() const { return notifier_; }
+            void notifierIs(const Segment::PtrConst& _notifier) {
+                Segment::Ptr notifierSave(const_cast<Segment *>(notifier_.ptr()));
+                if(_notifier==notifier_) return;
+                notifier_ = _notifier;
+                if(notifierSave) {
+                    notifierSave->deleteNotifiee(this);
+                }
+                if(_notifier) {
+                    _notifier->newNotifiee(this);
+                }
+                if(isNonReferencing_) {
+                    if(notifierSave) notifierSave->newRef();
+                    if(notifier_) notifier_->deleteRef();
+                }
+            }
+            bool isNonReferencing() const { return isNonReferencing_; }
+            ~NotifieeConst(){
+                if(notifier_&&isNonReferencing()) notifier_->newRef();
+            }
+            virtual void onExpediteChange( bool isExpedited ) {};
+
+            // Constructors ====================================================
+        protected:
+            Segment::PtrConst notifier_;
+            bool isNonReferencing_;
+            Fwk::String tacKeyForLocation_;
+            NotifieeConst(): Fwk::NamedInterface::NotifieeConst(),
+                isNonReferencing_(false){}
+        };
+        class Notifiee : public virtual NotifieeConst, public virtual Fwk::NamedInterface::Notifiee {
+        public:
+            typedef Fwk::Ptr<Notifiee const> PtrConst;
+            typedef Fwk::Ptr<Notifiee> Ptr;
+            Segment::PtrConst notifier() const { return NotifieeConst::notifier(); }
+            Segment::Ptr notifier() { return const_cast<Segment *>(NotifieeConst::notifier().ptr()); }
+            static Notifiee::Ptr NotifieeIs() {
+                Ptr m = new Notifiee();
+                return m;
+            }
+        protected:
+            Notifiee(): Fwk::NamedInterface::Notifiee() {}
+        };
+        Segment::NotifieeConst* notifiee() const {return notifiee_;}
+
         ShippingMode mode() const { return mode_; };
 
         Location const * source() const { return source_; }
@@ -80,8 +130,25 @@ namespace Shipping{
         void difficultyIs(Difficulty d)  { difficulty_ = d; }
 
         bool expediteSupport() const { return expediteSupport_; }
-        void expediteSupportIs( bool support ) { expediteSupport_ = support; }
+        void expediteSupportIs( bool support ) { 
+            if (support == expediteSupport_) return;
+            expediteSupport_ = support; 
+            if (notifiee_) notifiee_->onExpediteChange(support);
+        }
     protected:
+        Segment::NotifieeConst * notifiee_;
+        void newNotifiee( Segment::NotifieeConst * n ) const {
+            Segment* me = const_cast<Segment*>(this);
+            me->notifiee_ = n;
+        }
+        void deleteNotifiee( Segment::NotifieeConst * n ) const {
+            Segment* me = const_cast<Segment*>(this);
+            me->notifiee_ = 0;
+        }
+        void notifieeIs( Segment::Notifiee * n) const {
+            Segment* me = const_cast<Segment*>(this);
+            me->notifiee_ = n;
+        }
         Segment (const Segment&);
         Segment(Fwk::String _name, ShippingMode _mode) : 
             Fwk::NamedInterface(_name), mode_(_mode), length_(0.f),difficulty_(1.f) {}
@@ -138,7 +205,7 @@ namespace Shipping{
             return seg;
         }
         void segmentDel( Segment::Ptr seg ) { 
-            for (int i = 0; i < segment_.size(); i++){
+            for (unsigned int i = 0; i < segment_.size(); i++){
                 if (segment_[i] == seg){
                     segment_.erase( segment_.begin() + i);
                     return;

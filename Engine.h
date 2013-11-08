@@ -51,12 +51,9 @@ namespace Shipping {
                 Ptr m = new NotifieeConst();
                 return m;
             }
+            virtual void onSegmentExpediteChange( int diff ) {};
             virtual void onLocationNew( Location::Ptr ) {};
             virtual void onSegmentNew( Segment::Ptr ) {};
-
-            virtual void onLocationDel( Fwk::String name ) {};
-            virtual void onSegmentDel( Fwk::String name ) {};
-
             virtual void onLocationDel( Location::Ptr ) {};
             virtual void onSegmentDel( Segment::Ptr ) {};
 
@@ -126,14 +123,14 @@ namespace Shipping {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = 0;
         }
-
-
-        float segTravCost(Segment::Ptr, bool);
-        float segTravTime(Segment::Ptr, bool);
         void notifieeIs( ShippingNetwork::Notifiee * n) const {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = n;
         }
+
+        float segTravCost(Segment::Ptr, bool);
+        float segTravTime(Segment::Ptr, bool);
+
     private:
         string explore(
             Location* loc, Location* dst,
@@ -161,6 +158,12 @@ namespace Shipping {
             return m;
         }
 
+        void onSegmentExpediteChange( bool newExpedited ) { expeditedSegments += ((newExpedited) ? 1 : 0); }
+        void onLocationNew(Location::Ptr loc);
+        void onSegmentNew(Segment::Ptr seg);
+        void onLocationDel(Location::Ptr loc);
+        void onSegmentDel(Segment::Ptr seg);
+
         enum StatsEntityType{
             customer_,
             port_,
@@ -172,12 +175,6 @@ namespace Shipping {
             planeSegment_,
             SHIPPING_ENTITY_COUNT
         };
-
-        void onLocationNew(Location::Ptr loc);
-        void onSegmentNew(Segment::Ptr seg);
-        void onLocationDel(Location::Ptr loc);
-        void onSegmentDel(Segment::Ptr seg);
-
         static inline StatsEntityType customer() { return customer_; };
         static inline StatsEntityType port() { return port_; };
         static inline StatsEntityType truckTerminal() { return truckTerminal_; };
@@ -190,9 +187,26 @@ namespace Shipping {
         unsigned int shippingEntities( StatsEntityType type );
         Percent expeditedPercent();
     protected:
+        class SegmentReactor : public Segment::Notifiee {
+        public:
+            typedef Fwk::Ptr<SegmentReactor const> PtrConst;
+            typedef Fwk::Ptr<SegmentReactor> Ptr;
+            static SegmentReactor::Ptr SegmentReactorIs(Segment* n, ShippingNetworkReactor *netReactor) {
+                SegmentReactor::Ptr m = new SegmentReactor(n,netReactor);
+                return m;
+            }
+            void onExpediteChange( bool isExpedited ) {
+                parent->onSegmentExpediteChange(isExpedited);
+            }
+        protected: 
+            SegmentReactor(Segment* n, ShippingNetworkReactor *snr) : parent(snr) { notifierIs(n); }      
+            ShippingNetworkReactor * parent;
+        };
+
         ShippingNetworkReactor(ShippingNetwork * sn) : expeditedSegments(0), ShippingNetwork::Notifiee() { notifierIs(sn); }
         unsigned int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
+        map < string, SegmentReactor::Ptr > segmentreactors;
     };
 
 }
