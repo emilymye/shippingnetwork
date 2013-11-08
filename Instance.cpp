@@ -14,7 +14,6 @@
 namespace Shipping {
 
     using namespace std;
-
     static const string customerStr = "Customer";
     static const string portStr = "Port";
     static const string truckTerminalStr = "Truck terminal";
@@ -27,6 +26,32 @@ namespace Shipping {
     static const string statsStr = "Stats";
     static const string connStr = "Conn";
     static const string fleetStr = "Fleet";
+    static const string truckStr = "Truck";
+    static const string boatStr = "Boat";
+    static const string planeStr = "Plane";
+    static const string speedStr = "speed";
+    static const string capacityStr = "capacity";
+
+    static const string segmentStr = "segment";
+    static const unsigned int segmentStrlen = segmentStr.length();
+
+    static const string sourceStr = "source";
+    static const string lengthStr = "length";
+    static const string returnSegStr = "return segment";
+    static const string difficultyStr = "difficulty";
+    static const string expSupportStr = "expedite support";
+    static const int MAXDIGITS = 20;
+
+    static const string expPercentStr = "expedite percentage";
+
+    static const string exploreStr = "explore";
+    static const string connectStr = "connect";
+    static const string distanceStr = "distance";
+    static const string costStr = "cost";
+    static const string timeStr = "time";
+    static const string expeditedStr = "expedited";
+
+    static const unsigned int connTypeStrLen = exploreStr.length();
 
     class ManagerImpl : public Instance::Manager {
     public:
@@ -75,8 +100,6 @@ namespace Shipping {
         int segmentNumber(const string& name);
     };
 
-    static const string segmentStr = "segment";
-    static const unsigned int segmentStrlen = segmentStr.length();
     string LocationRep::attribute(const string& name) {
         if (name.length() > segmentStrlen) {
             int idx = segmentNumber(name);
@@ -159,13 +182,6 @@ namespace Shipping {
         Ptr<ManagerImpl> manager_;
         ShippingNetwork::Ptr sn_;
     };
-
-    static const string sourceStr = "source";
-    static const string lengthStr = "length";
-    static const string returnSegStr = "return segment";
-    static const string difficultyStr = "difficulty";
-    static const string expSupportStr = "expedite support";
-    static const int MAXDIGITS = 20;
 
     string SegmentRep::attribute(const string& name) {
         if (!name.compare(sourceStr)) {
@@ -258,7 +274,6 @@ namespace Shipping {
         Ptr<ManagerImpl> manager_;
     };
 
-    static const string expPercentStr = "expedite percentage";
 
     string StatsRep::attribute(const string& name) {
         stringstream ss;
@@ -291,10 +306,6 @@ namespace Shipping {
         cerr << "cannot set attribute for Statistics" << endl;
     }
 
-
-    static const string exploreAttrStr = "explore";
-    static const string connectAttrStr = "connect";
-    static const unsigned int connTypeStrLen = exploreAttrStr.length();
     class ConnRep : public Instance {
     public:
         ConnRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
@@ -320,27 +331,36 @@ namespace Shipping {
             string token;
             ss >> startLoc >> token; 
 
-            if (!connType.compare(exploreAttrStr)) {
+            if (!connType.compare(exploreStr)) {
                 ShippingNetwork::ExplorationQuery q;
                 while (!ss.eof()){
                     ss >> token;
-                    int attrIdx = atoi(token.substr(4).c_str());
-
-                    switch (attrIdx) {
-                    case 0: ss >> token; q.maxDist = atof(token.c_str());
-                    case 1: ss >> token; q.maxCost = atof(token.c_str());
-                    case 2: ss >> token; q.maxTime = atof(token.c_str());
-                    case 3: q.expedited = true;
-                    default: break;
+                    if (!token.compare(distanceStr)){
+                        float dist;
+                        ss >> dist;
+                        q.maxDist = dist;
+                    } else if (!token.compare(costStr)){
+                        float cost;
+                        ss >> cost;
+                        q.maxCost = cost;
+                    } else if (!token.compare(timeStr)){
+                        float time;
+                        ss >> time;
+                        q.maxTime = time;
+                    } else if (!token.compare(expeditedStr)){
+                        q.expedited = true;
+                    }
+                    else {
+                        cerr << "Invalid explore query attribute" << token << endl;
+                        return "";
                     }
                 }
                 return network_->path(startLoc,  q);
-            } else if (!connType.compare(connectAttrStr)) {
+            } else if (!connType.compare(connectStr)) {
                 string endLoc;
                 ss >> endLoc;
                 return network_->path(startLoc, endLoc);
             }
-
         } catch (Fwk::Exception e) {
             cerr << "Invalid attribute for Connection" << endl;
             return "";
@@ -364,12 +384,7 @@ namespace Shipping {
         Fleet::Ptr fleet_;
     };
 
-    static const string truckStr = "Truck";
-    static const string boatStr = "Boat";
-    static const string planeStr = "Plane";
-    static const string speedStr = "speed";
-    static const string costStr = "cost";
-    static const string capacityStr = "capacity";
+
 
     string FleetRep::attribute(const string& name) {
         size_t idx = name.find(',');
