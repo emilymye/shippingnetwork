@@ -196,7 +196,7 @@ namespace Shipping {
                     }
 
                     bool newNode = false;
-                    for (unsigned int i = 0; i < current_loc->segments(); i++) {
+                    for (unsigned int i = 1; i <= current_loc->segments(); i++) {
                         Segment::Ptr seg = current_loc->segment(i);
                         if (pass == 1 && !seg->expediteSupport()) {
                             continue;
