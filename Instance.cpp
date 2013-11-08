@@ -388,7 +388,7 @@ namespace Shipping {
 
     string FleetRep::attribute(const string& name) {
         size_t idx = name.find(',');
-        if (idx!=std::string::npos) {
+        if (idx==std::string::npos) {
             cerr << "invalid attribute for Fleet" << endl;
             return "";
         }
