@@ -53,8 +53,13 @@ namespace Shipping {
             }
             virtual void onLocationNew( Location::Ptr ) {};
             virtual void onSegmentNew( Segment::Ptr ) {};
+
             virtual void onLocationDel( Fwk::String name ) {};
             virtual void onSegmentDel( Fwk::String name ) {};
+
+            virtual void onLocationDel( Location::Ptr ) {};
+            virtual void onSegmentDel( Segment::Ptr ) {};
+
             // Constructors ====================================================
         protected:
             ShippingNetwork::PtrConst notifier_;
@@ -93,9 +98,9 @@ namespace Shipping {
         Segment * segment( Fwk::String _name) { return segmentMap[_name].ptr(); };
 
         //FLEET ==============================================
-        Fleet::Ptr fleetNew (Fwk::String _name);
-        Fleet::Ptr fleetDel (Fwk::String _name); 
-        Fleet * fleet() { return fleet_; };
+        Fleet::Ptr fleetNew(Fwk::String _name);
+        void fleetDel(Fwk::String _name);
+        Fleet * fleet() { return fleet_.ptr(); };
 
 
         //CONNECTIVITY ==============================================
@@ -124,7 +129,7 @@ namespace Shipping {
             Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool exploration);
         map<string,Location::Ptr> locationMap;
         map<string,Segment::Ptr> segmentMap;
-        Fleet* fleet_;
+        Fleet::Ptr fleet_;
 
     };
 
@@ -145,11 +150,6 @@ namespace Shipping {
             return m;
         }
 
-        void onLocationNew(Location::Ptr loc);
-        void onSegmentNew(Segment::Ptr seg);
-        void onLocationDel(Location::Ptr loc);
-        void onSegmentDel(Segment::Ptr seg);
-
         enum StatsEntityType{
             customer_,
             port_,
@@ -161,6 +161,12 @@ namespace Shipping {
             planeSegment_,
             SHIPPING_ENTITY_COUNT
         };
+        
+        void onLocationNew(Location::Ptr loc);
+        void onSegmentNew(Segment::Ptr seg);
+        void onLocationDel(Location::Ptr loc);
+        void onSegmentDel(Segment::Ptr seg);
+
         static inline StatsEntityType customer() { return customer_; };
         static inline StatsEntityType port() { return port_; };
         static inline StatsEntityType truckTerminal() { return truckTerminal_; };

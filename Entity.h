@@ -61,6 +61,7 @@ namespace Shipping{
             Ptr m = new Segment(_name, _mode);
             return m;
         }
+        ~Segment() { }
 
         ShippingMode mode() const { return mode_; };
 
@@ -74,8 +75,10 @@ namespace Shipping{
 
         Mile length() const { return length_; }
         void lengthIs( Mile newLength ) { length_ = newLength; }
+        
         Difficulty difficulty() const { return difficulty_; }
         void difficultyIs(Difficulty d)  { difficulty_ = d; }
+        
         bool expediteSupport() const { return expediteSupport_; }
         void expediteSupportIs( bool support ) { expediteSupport_ = support; }
     protected:
@@ -119,11 +122,25 @@ namespace Shipping{
             Ptr m = new Location(_name, _type);
             return m;
         }
-         ~Location();
-        Segment::PtrConst segment( int num ) const { return segment_[num]; }
-        Segment::Ptr segment( int num ) { return segment_[num]; }
+        ~Location() { }
+        Segment::PtrConst segment( unsigned int num ) const { 
+            if ( !num  || num > segment_.size()) return 0;
+            return segment_[num - 1]; 
+        }
+        Segment::Ptr segment( unsigned int num ) { 
+            if ( !num || num > segment_.size()) return 0;
+            return segment_[num - 1]; 
+        }
         unsigned int segments() { return segment_.size(); }
-        void segmentIs( Fwk::String segmentName ); //TODO
+        void segmentNew ( Segment::Ptr seg ){ segment_.push_back(seg); }
+        void segmentDel( Segment::Ptr seg ) { 
+            for (int i = 0; i < segment_.size(); i++){
+                if (segment_[i] == seg){
+                    segment_.erase( segment_.begin() + i);
+                    return;
+                }
+            }
+        }
     protected:
         Location ( const Location&);
         explicit Location(Fwk::String _name, LocationType _type) : Fwk::NamedInterface(_name), type_(_type) {}
@@ -255,11 +272,12 @@ namespace Shipping{
 
         typedef Fwk::Ptr<Fleet const> PtrConst;
         typedef Fwk::Ptr<Fleet> Ptr;
-        Fleet::Ptr FleetNew(Fwk::String _name) {
+        static Fleet::Ptr FleetNew(Fwk::String _name) {
             Ptr m = new Fleet( _name );
             return m;
         }
 
+        ~Fleet() {}
         Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
         void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
 
@@ -268,6 +286,7 @@ namespace Shipping{
 
         Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
         void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
+
     protected:
         struct FleetMode {
             Speed speed_;

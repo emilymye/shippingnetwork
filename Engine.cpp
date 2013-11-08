@@ -5,14 +5,14 @@
 
 namespace Shipping {
     using namespace std;
+
     ShippingNetwork::~ShippingNetwork(){
-        for (map<string,Location::Ptr>::iterator it = location_.begin(); it!=location_.end(); ++it){
+        for (map<string,Location::Ptr>::iterator it = locationMap.begin(); it!=locationMap.end(); ++it){
             locationDel(it->first);
         }
-        for (map<string,Segment::Ptr>::iterator it = segment_.begin(); it!=segment_.end(); ++it){
+        for (map<string,Segment::Ptr>::iterator it = segmentMap.begin(); it!=segmentMap.end(); ++it){
             segmentDel(it->first);
         }
-        if (fleet_) delete fleet_;
     }
 
     //----------| NotifieeConst Implementation |------------//
@@ -39,50 +39,63 @@ namespace Shipping {
         }
     }
 
+    // ----------| Attribute Implementation | --------//
     Location::Ptr ShippingNetwork::locationNew( Location::Ptr loc){
+        if (locationMap.find(loc->name()) == locationMap.end()) return 0;
         locationMap[loc->name()] = loc;
         notifiee_->onLocationNew(loc);
         return loc;
     }
-    void ShippingNetwork::locationDel( Fwk::String name ){
-        notifiee_->onLocationDel(locationMap[name]);
-        locationMap.erase(name);
+    void ShippingNetwork::locationDel( Fwk::String _name ){
+        if (locationMap.find(_name) == locationMap.end()) return;
+        Location::Ptr l = locationMap[_name];
+        for (unsigned int i = 1; i <= l->segments(); i++){
+            l->segment(i)->sourceIs(0);
+        }
+        notifiee_->onLocationDel(l);
+        locationMap.erase(_name);
     }
-
     Segment::Ptr ShippingNetwork::segmentNew( Segment::Ptr seg ){
+        if (segmentMap.find(seg->name()) == segmentMap.end()) return 0;
         segmentMap[seg->name()] = seg;
         notifiee_->onSegmentNew(seg);
         return seg;
     }
-    void ShippingNetwork::segmentDel( Fwk::String name ){
-        notifiee_->onSegmentDel(locationMap[name]);
-        segmentMap.erase(name);
+    void ShippingNetwork::segmentDel( Fwk::String _name ){
+        if (segmentMap.find(_name) == segmentMap.end()) return;
+        Segment::Ptr s = segmentMap[_name];
+        s->source()->segmentDel(s);
+        notifiee_->onSegmentDel(s);
+        segmentMap.erase(_name);
     }
 
     Fleet::Ptr ShippingNetwork::fleetNew (Fwk::String _name){
+        if (fleet_) return 0;
+        fleet_ = Fleet::FleetNew(_name);
+        return fleet_;
     }
-    Fleet::Ptr ShippingNetwork::fleetDel (Fwk::String _name){
+    void ShippingNetwork::fleetDel(Fwk::String _name){
+        if (!fleet_) return;
+        if (fleet_->name() != _name)  return;
+        fleet_ = 0;
     }
 
-    void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
-        if (loc->type() == loc->customer()) {
-            entityCounts[customer_]++;
-        }
-        else if (loc->type() == loc->port()) {
-            entityCounts[port_]++;
-        }
-        else if (loc->type() == loc->truckTerminal()) {
-            entityCounts[truckTerminal_]++;
-        }
-        else if (loc->type() == loc->boatTerminal()) {
-            entityCounts[boatTerminal_]++;
-        }
-        else if (loc->type() == loc->planeTerminal()) {
-            entityCounts[planeTerminal_]++;
-        }
+    string ShippingNetwork::path(Fwk::String startLocation, Fwk::String endLocation){
+        return explore(locationMap[startLocation].ptr(),locationMap[endLocation].ptr(),
+            0.f, 0.f, 0.f,false,false);
     }
-    void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) {
-        if (seg->mode() == Truck_) {
+    string ShippingNetwork::path(Fwk::String startLocation, ExplorationQuery q){
+        Location* loc = locationMap[startLocation].ptr();
+        return explore(loc, 0, q.maxDist,q.maxCost,q.maxTime,q.expedited,true);
+    }
+
+    //----------| Shipping Network Reactor |----//
+    void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
+        if (loc->type() == loc->other()) return;
+        entityCounts[loc->customer() + loc->type()]++;
+    }
+    void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) {        
+        if (seg->mode() - Truck_) {
             entityCounts[truckSegment_]++;
         }
         else if (seg->mode() == Boat_) {
@@ -91,30 +104,33 @@ namespace Shipping {
         else if (seg->mode() == Plane_) {
             entityCounts[planeSegment_]++;
         }
+        if (seg->expediteSupport()) expeditedSegments++;
+    }
+
+    void ShippingNetworkReactor::onLocationDel(Location::Ptr loc) {
+        if (loc->type() == loc->other()) return;
+        entityCounts[loc->customer() + loc->type()]--;
+    }
+    void ShippingNetworkReactor::onSegmentDel(Segment::Ptr seg) {
+        if (seg->mode() == Truck_) {
+            entityCounts[truckSegment_]--;
+        } else if (seg->mode() == Boat_) {
+            entityCounts[boatSegment_]--;
+        } else if (seg->mode() == Plane_) {
+            entityCounts[planeSegment_]--;
+        }
+        if (seg->expediteSupport()) expeditedSegments--;
     }
     unsigned int ShippingNetworkReactor::shippingEntities(StatsEntityType type) {
-        return entityCounts[type];
+        if (type >= SHIPPING_ENTITY_COUNT) return 0;
+            return entityCounts[type];
     }
     Percent ShippingNetworkReactor::expeditedPercent() {
-        unsigned int segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
-        return Percent((float)expeditedSegments / segmentCount);
+        float segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
+        return Percent((float) expeditedSegments / segmentCount);
     }
 
-    //----------| Notifiee Implementation |------------//
-
-    //Fwk::String
-    //    ShippingNetwork::attributeString( Fwk::RootNotifiee::AttributeId a ) const {
-    //        Fwk::String str = "unknown";
-    //        switch(a) {
-    //        case NotifieeConst::version__: str = "version"; break;
-    //        case NotifieeConst::notificationException__: str = "notificationException"; break;
-    //        case NotifieeConst::cell__: str = "location"; break;
-    //        default: str = Fwk::RootNotifiee::attributeString(a);
-    //        }
-    //        return str;
-    //}
-
-
+    //----------| PRIVATE CALLS |----//
     typedef struct Node {
         Location *loc;
         string *path;
