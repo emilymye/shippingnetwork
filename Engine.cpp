@@ -102,8 +102,9 @@ namespace Shipping {
     //----------| Shipping Network Reactor |----//
     void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
         if (loc->type() == loc->other()) return;
-        entityCounts[loc->customer() + loc->type()]++;
+        entityCounts[loc->type() - loc->customer()]++;
     }
+
     void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) {        
         if (seg->mode() - Truck_) {
             entityCounts[truckSegment_]++;
