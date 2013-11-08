@@ -35,9 +35,29 @@ namespace Shipping {
         Ptr<Instance> instance(const string& name);
         void instanceDel(const string& name);
     private:
+        bool statsCreated;
+        bool connCreated;
+        bool fleetCreated;
         ShippingNetwork::Ptr network_;
         ShippingNetworkReactor::Ptr reactor_;
-        map<string,Ptr<Instance> > instance_;
+
+        enum InstanceType {
+            None,
+            Location,
+            Segment,
+            Fleet,
+            Stats,
+            Connection
+        };        
+        struct InstanceStore{
+            Ptr<Instance> instance;
+            InstanceType type;
+            InstanceStore() : instance(0), type(None) {}
+            InstanceStore(Ptr<Instance> p, InstanceType t): 
+                instance(p), type(t) {}
+        };
+        map<string, InstanceStore> instance_;
+
     };
 
     /*** Rep layer interfaces ***/
@@ -87,8 +107,8 @@ namespace Shipping {
     public:
         CustomerRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
             LocationRep(name, manager, network) {
-            loc_ = CustomerLocation::CustomerLocationNew(name);
-            network_->locationNew(loc_);
+                loc_ = CustomerLocation::CustomerLocationNew(name);
+                network_->locationNew(loc_);
         }
     };
 
@@ -96,8 +116,8 @@ namespace Shipping {
     public:
         PortRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
             LocationRep(name, manager, network) {
-            loc_ = PortLocation::PortLocationNew(name);
-            network_->locationNew(loc_);
+                loc_ = PortLocation::PortLocationNew(name);
+                network_->locationNew(loc_);
         }
     };
 
@@ -105,8 +125,8 @@ namespace Shipping {
     public:
         TruckTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
             LocationRep(name, manager, network) {
-            loc_ = TruckTerminal::TruckTerminalNew(name);
-            network_->locationNew(loc_);
+                loc_ = TruckTerminal::TruckTerminalNew(name);
+                network_->locationNew(loc_);
         }
     };
 
@@ -114,8 +134,8 @@ namespace Shipping {
     public:
         BoatTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
             LocationRep(name, manager, network) {
-            loc_ = BoatTerminal::BoatTerminalNew(name);
-            network_->locationNew(loc_);
+                loc_ = BoatTerminal::BoatTerminalNew(name);
+                network_->locationNew(loc_);
         }
     };
 
@@ -123,8 +143,8 @@ namespace Shipping {
     public:
         PlaneTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) : 
             LocationRep(name, manager, network) {
-            loc_ = PlaneTerminal::PlaneTerminalNew(name);
-            network_->locationNew(loc_);
+                loc_ = PlaneTerminal::PlaneTerminalNew(name);
+                network_->locationNew(loc_);
         }
     };
 
@@ -173,11 +193,23 @@ namespace Shipping {
     void SegmentRep::attributeIs(const string& name, const string& v){
         try{
             if (!name.compare(sourceStr)) {
+                Location::Ptr source_ = sn_->location(v);
+                if (!source_) {
+                    cerr << "invalid location for Segment source" << endl;
+                    return;
+                }
+                source_->segmentNew(seg_);
                 seg_->sourceIs( sn_->location(v) );
             } else if (!name.compare(lengthStr)) {
                 seg_->lengthIs(atof(v.c_str()));
             } else if (!name.compare(returnSegStr)) {
-                seg_->returnSegmentIs( sn_->segment(v));
+                Segment::Ptr rSeg = sn_->segment(v);
+                if (!rSeg) {
+                    cerr << "invalid segment for Segment returnSegment" << endl;
+                    return;
+                }
+                seg_->returnSegmentIs( rSeg );
+                rSeg->returnSegmentIs( seg_ );
             } else if (!name.compare(difficultyStr)) {
                 seg_->difficultyIs( atof(v.c_str()));
             } else if (!name.compare(expSupportStr)) {
@@ -192,8 +224,8 @@ namespace Shipping {
     public:
         TruckSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
             SegmentRep(name, manager, sn) {
-            seg_ = TruckSegment::TruckSegmentNew(name);
-            sn_->segmentNew(seg_);
+                seg_ = TruckSegment::TruckSegmentNew(name);
+                sn_->segmentNew(seg_);
         }
     };
 
@@ -201,8 +233,8 @@ namespace Shipping {
     public:
         BoatSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
             SegmentRep(name, manager, sn) {
-            seg_ = BoatSegment::BoatSegmentNew(name);
-            sn_->segmentNew(seg_);
+                seg_ = BoatSegment::BoatSegmentNew(name);
+                sn_->segmentNew(seg_);
         }
     };
 
@@ -210,8 +242,8 @@ namespace Shipping {
     public:
         PlaneSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
             SegmentRep(name, manager, sn) {
-            seg_ = PlaneSegment::PlaneSegmentNew(name);
-            sn_->segmentNew(seg_);
+                seg_ = PlaneSegment::PlaneSegmentNew(name);
+                sn_->segmentNew(seg_);
         }
     };
 
@@ -324,7 +356,7 @@ namespace Shipping {
     class FleetRep : public Instance {
     public:
         FleetRep(const string& name, ManagerImpl* manager, Fleet::Ptr f) :
-            Instance(name), manager_(manager), fleet_(f){}
+            Instance(name), manager_(manager), fleet_(f){ }      
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
     private:
@@ -422,89 +454,102 @@ namespace Shipping {
     }
 
     Ptr<Instance> ManagerImpl::instanceNew(const string& name, const string& type) {
-        if (instance_[name]) 
+        if (instance_.find(name) != instance_.end()) 
             return NULL;
 
         if (type == customerStr) {
             Ptr<CustomerRep> t = new CustomerRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t, Location);
             return t;
         }
 
         if (type == portStr) {
             Ptr<PortRep> t = new PortRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t,Location);
             return t;
         }
 
         else if (type == truckTerminalStr) {
             Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t,Location);
             return t;
         }
         else if (type == boatTerminalStr) {
             Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t,Location);
             return t;
         }
         else if (type == planeTerminalStr) {
             Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t,Location);
             return t;
         }
         else if (type == truckSegmentStr) {
             Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t,Segment);
             return t;
         }
         else if (type == boatSegmentStr) {
             Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t,Segment);
             return t;
         }
         else if (type == planeSegmentStr) {
             Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, network_);
-            instance_[name] = t;
+            instance_[name] = InstanceStore(t,Segment);
             return t;
         }
         else if (type == statsStr) {
+            if (statsCreated) return NULL;
             Ptr<StatsRep> t = new StatsRep(name, this, reactor_);
-            instance_[name] = t;
+            statsCreated = true;
+            instance_[name] = InstanceStore(t,Stats);
             return t;
         }
         else if (type == connStr) {
+            if (connCreated) return NULL;
             Ptr<ConnRep> t = new ConnRep(name, this, network_);
-            instance_[name] = t;
+            connCreated = true;
+            instance_[name] = InstanceStore(t,Connection);
             return t;
         }
         else if (type == fleetStr) {
-            Ptr<FleetRep> t = new FleetRep(name, this, network_->fleet());
-            instance_[name] = t;
+            if (fleetCreated) return NULL;
+            Ptr<FleetRep> t = new FleetRep(name, this, network_->fleetNew(name));
+            fleetCreated = true;
+            instance_[name] = InstanceStore(t,Fleet);
             return t;
         }
         return NULL;
     }
 
     Ptr<Instance> ManagerImpl::instance(const string& name) {
-        map<string,Ptr<Instance> >::const_iterator t = instance_.find(name);
+        map<string,InstanceStore>::const_iterator t = instance_.find(name);
         if (t == instance_.end()) {
             cerr << name << " does not exist as an instance\n";
             return NULL;
         }
-        else {
-            return (*t).second;
-        }
+
+        return (t->second).instance;
     }
 
     void ManagerImpl::instanceDel(const string& name) {
-        map<string,Ptr<Instance> >::iterator t = instance_.find(name);
+        map<string,InstanceStore>::iterator t = instance_.find(name);
         if (t == instance_.end()) {
             cerr << name << " does not exist as an instance\n";
+            return;
         }
-        else {
-            instance_.erase(t);
+
+        switch( t->second.type ){
+        case Location: network_->locationDel( name ); break;
+        case Segment: network_->locationDel( name ); break;
+        case Fleet: network_->fleetDel( name ); fleetCreated = false; break;
+        case Stats: statsCreated = false; break;
+        case Connection: connCreated = false; break;
+        default: break;
         }
-        return;
+
+        instance_.erase(t->first);
     }
 
 }
