@@ -39,16 +39,62 @@ namespace Shipping {
         }
     }
 
+    Location::Ptr ShippingNetwork::locationNew( Location::Ptr loc){
+        locationMap[loc->name()] = loc;
+        notifiee_->onLocationNew(loc);
+        return loc;
+    }
+    Location::Ptr ShippingNetwork::locationDel( Location::Ptr loc ){
+        locationMap.erase(loc->name());
+        notifiee_->onLocationDel(loc);
+    }
+
+    Segment::Ptr ShippingNetwork::segmentNew( Segment::Ptr s ){
+    }
+    Segment::Ptr ShippingNetwork::segmentDel( Fwk::String _name ){
+    }
+
+    Fleet::Ptr ShippingNetwork::fleetNew (Fwk::String _name){
+    }
+    Fleet::Ptr ShippingNetwork::fleetDel (Fwk::String _name){
+    }
+
     void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
+        if (loc->type() == loc->customer()) {
+            entityCounts[customer_]++;
+        }
+        else if (loc->type() == loc->port()) {
+            entityCounts[port_]++;
+        }
+        else if (loc->type() == loc->truckTerminal()) {
+            entityCounts[truckTerminal_]++;
+        }
+        else if (loc->type() == loc->boatTerminal()) {
+            entityCounts[boatTerminal_]++;
+        }
+        else if (loc->type() == loc->planeTerminal()) {
+            entityCounts[planeTerminal_]++;
+        }
     }
     void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) {
+        if (seg->mode() == Truck_) {
+            entityCounts[truckSegment_]++;
+        }
+        else if (seg->mode() == Boat_) {
+            entityCounts[boatSegment_]++;
+        }
+        else if (seg->mode() == Plane_) {
+            entityCounts[planeSegment_]++;
+        }
     }
     unsigned int ShippingNetworkReactor::shippingEntities(StatsEntityType type) {
+        return entityCounts[type];
     }
     Percent ShippingNetworkReactor::expeditedPercent() {
         unsigned int segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
         return Percent((float)expeditedSegments / segmentCount);
     }
+
     //----------| Notifiee Implementation |------------//
 
     //Fwk::String

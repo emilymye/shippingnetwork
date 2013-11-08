@@ -83,12 +83,12 @@ namespace Shipping {
         //LOCATION ==============================================
         Location::Ptr locationNew( Location::Ptr l);
         Location::Ptr locationDel( Fwk::String _name );
-        Location* location( Fwk::String _name) { return location_[_name].ptr(); };
+        Location* location( Fwk::String _name) { return locationMap[_name].ptr(); };
 
         //SEGMENT =============================================
         Segment::Ptr segmentNew( Segment::Ptr s );
         Segment::Ptr segmentDel( Fwk::String _name );
-        Segment * segment( Fwk::String _name) { return segment_[_name].ptr(); };
+        Segment * segment( Fwk::String _name) { return segmentMap[_name].ptr(); };
 
         //FLEET ==============================================
         Fleet::Ptr fleetNew (Fwk::String _name);
@@ -120,8 +120,8 @@ namespace Shipping {
         string explore(
             Location* loc, Location* dst,
             Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool exploration);
-        map<string,Location::Ptr> location_;
-        map<string,Segment::Ptr> segment_;
+        map<string,Location::Ptr> locationMap;
+        map<string,Segment::Ptr> segmentMap;
         Fleet* fleet_;
 
     };
@@ -145,6 +145,8 @@ namespace Shipping {
 
         void onLocationNew(Location::Ptr loc);
         void onSegmentNew(Segment::Ptr seg);
+        void onLocationDel(Location::Ptr loc);
+        void onSegmentDel(Segment::Ptr seg);
 
         enum StatsEntityType{
             customer_,

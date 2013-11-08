@@ -101,13 +101,17 @@ namespace Shipping{
         enum LocationType{
             customer_,
             port_,
-            terminal_,
+            truckTerminal_,
+            boatTerminal_,
+            planeTerminal_,
             other_
         };
         static inline LocationType customer() { return customer_; }
         static inline LocationType port() { return port_; }
-        static inline LocationType terminal() { return terminal_; }
-        static inline LocationType other() { return terminal_; }
+        static inline LocationType truckTerminal() { return truckTerminal_; }
+        static inline LocationType boatTerminal() { return boatTerminal_; }
+        static inline LocationType planeTerminal() { return planeTerminal_; }
+        static inline LocationType other() { return customer_; }
         LocationType type() const { return type_; }
         void typeIs( LocationType _type ) { type_ = _type; }
 
