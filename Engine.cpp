@@ -38,14 +38,19 @@ namespace Shipping {
         notifiee_->onLocationNew(loc);
         return loc;
     }
-    Location::Ptr ShippingNetwork::locationDel( Location::Ptr loc ){
-        locationMap.erase(loc->name());
-        notifiee_->onLocationDel(loc);
+    void ShippingNetwork::locationDel( Fwk::String name ){
+        notifiee_->onLocationDel(locationMap[name]);
+        locationMap.erase(name);
     }
 
-    Segment::Ptr ShippingNetwork::segmentNew( Segment::Ptr s ){
+    Segment::Ptr ShippingNetwork::segmentNew( Segment::Ptr seg ){
+        segmentMap[seg->name()] = seg;
+        notifiee_->onSegmentNew(seg);
+        return seg;
     }
-    Segment::Ptr ShippingNetwork::segmentDel( Fwk::String _name ){
+    void ShippingNetwork::segmentDel( Fwk::String name ){
+        notifiee_->onSegmentDel(locationMap[name]);
+        segmentMap.erase(name);
     }
 
     Fleet::Ptr ShippingNetwork::fleetNew (Fwk::String _name){

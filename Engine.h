@@ -53,6 +53,8 @@ namespace Shipping {
             }
             virtual void onLocationNew( Location::Ptr ) {};
             virtual void onSegmentNew( Segment::Ptr ) {};
+            virtual void onLocationDel( Fwk::String name ) {};
+            virtual void onSegmentDel( Fwk::String name ) {};
             // Constructors ====================================================
         protected:
             ShippingNetwork::PtrConst notifier_;
@@ -82,12 +84,12 @@ namespace Shipping {
 
         //LOCATION ==============================================
         Location::Ptr locationNew( Location::Ptr l);
-        Location::Ptr locationDel( Fwk::String _name );
+        void locationDel( Fwk::String _name );
         Location* location( Fwk::String _name) { return locationMap[_name].ptr(); };
 
         //SEGMENT =============================================
         Segment::Ptr segmentNew( Segment::Ptr s );
-        Segment::Ptr segmentDel( Fwk::String _name );
+        void segmentDel( Fwk::String _name );
         Segment * segment( Fwk::String _name) { return segmentMap[_name].ptr(); };
 
         //FLEET ==============================================

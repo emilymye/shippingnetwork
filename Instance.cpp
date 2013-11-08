@@ -134,7 +134,7 @@ namespace Shipping {
         SegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) : Instance(name), manager_(manager), sn_(sn){}
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
-    private:
+    protected:
         Segment::Ptr seg_;
         Ptr<ManagerImpl> manager_;
         ShippingNetwork::Ptr sn_;
