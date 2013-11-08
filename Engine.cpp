@@ -232,9 +232,8 @@ namespace Shipping {
                             append_ss.flush();
                             append_ss.precision(2);
                             append_ss << "(" << seg->name() << ":" << fixed << seg->length().value() << ":" << seg->name() << ") " << seg_end->name();
-                            appendStr = "";
-                            append_ss >> appendStr;
-//                            cout << "*****\n" << appendStr << "****\n";
+                            appendStr = append_ss.str();
+//                            cout << "@@@@@\n" << appendStr << "\n@@@@@\n";
                             node.path->append(appendStr);
                             node.dist = current_distance.value() + seg->length().value();
                             if (pass == 0) { // non-expedited
