@@ -17,8 +17,7 @@ ShippingNetwork
 
 ShippingNetwork::Notifiee - ShippingNetworkReactor
 
-Location - CustomerLocation, PortLocation, Terminal
-Terminal - TruckTerminal, BoatTerminal, PlaneTerminal
+Location - CustomerLocation, PortLocation, TruckTerminal, BoatTerminal, PlaneTerminal
 
 Segment - TruckSegment, BoatSegment, PlaneSegment
 
@@ -30,8 +29,7 @@ needed by Statistics entity type.
 
 Classes with "Rep" in name are rep layer objects.
 
-Classes including Location, Terminal, Segment, Fleet and their subclasses are engine layer
-objects.
+Classes including Location, Segment, Fleet and their subclasses are engine layer objects.
 
 The rep layer serves as a middle layer interface. When creating instances, rep layer objects
 are created first, from which the actual engine layer objects are then created. The rep layer
