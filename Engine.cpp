@@ -169,6 +169,8 @@ namespace Shipping {
             std::stringstream ss;
             int pass = (exploration && expedited) ? 1 : 0; 
 
+            map<string, bool> exploration_path_printed;
+
             /* traverse (at most) two times. First time non-expedited, second time (if requested) expedited */
             for (; pass < 2; pass++) { // pass=0:non-expedited  pass=1:expedited
                 Node_T node = Node_T(loc, new string (loc->name()));
@@ -244,7 +246,10 @@ namespace Shipping {
                             newNode = true;
 
                             if (exploration) { // print path
-                                ss <<  *(node.path) << endl;
+                                if (exploration_path_printed.find(*(node.path)) == exploration_path_printed.end()) {
+                                    exploration_path_printed[*(node.path)] = true;
+                                    ss <<  *(node.path) << endl;
+                                }
                             }
                         }
                     }
