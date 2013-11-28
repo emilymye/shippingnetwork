@@ -38,6 +38,8 @@ namespace Shipping{
         Cost(float num) : Ordinal<Cost, float>(num){
             if (num < 0 ) throw Fwk::RangeException("Cost");
         }
+        Cost expedited() { return (value() * 1.5); }
+             
     };
     class Capacity : public Ordinal<Capacity, unsigned int> {
     public:

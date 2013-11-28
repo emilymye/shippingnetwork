@@ -562,7 +562,7 @@ namespace Shipping {
 
         switch( t->second.type ){
         case Location: network_->locationDel( name ); break;
-        case Segment: network_->locationDel( name ); break;
+        case Segment: network_->segmentDel( name ); break;
         case Fleet: network_->fleetDel( name ); fleetCreated = false; break;
         case Stats: statsCreated = false; break;
         case Connection: connCreated = false; break;

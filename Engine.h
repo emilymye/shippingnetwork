@@ -12,6 +12,7 @@
 #include "Entity.h"
 #include "Nominal.h"
 #include <map>
+#include <queue>
 #include <cfloat>
 #include <sstream>
 namespace Shipping {
@@ -99,7 +100,6 @@ namespace Shipping {
         void fleetDel(Fwk::String _name);
         Fleet * fleet() { return fleet_.ptr(); };
 
-
         //CONNECTIVITY ==============================================
         struct ExplorationQuery{
             Mile maxDist;
@@ -109,8 +109,17 @@ namespace Shipping {
             ExplorationQuery() : maxDist(FLT_MAX),maxCost(FLT_MAX), maxTime(FLT_MAX), expedited(false) {}
         };
 
-        string path(Fwk::String startLocation, Fwk::String endLocation);
-        string path(Fwk::String startLocation, ExplorationQuery query);
+        string path(Fwk::String startLocation, Fwk::String endLocation) { 
+            Location* start = location(startLocation);
+            Location* end = location(endLocation);
+            if (!start || !end) return "";
+            return connection(start,end);
+        }
+        string path(Fwk::String startLocation, ExplorationQuery query){
+            Location* start = location(startLocation);
+            if (!start) return "";
+            return exploration(start, query);
+        }
     protected:
         ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0) {}
         ShippingNetwork::NotifieeConst * notifiee_;
@@ -127,18 +136,28 @@ namespace Shipping {
             ShippingNetwork* me = const_cast<ShippingNetwork*>(this);
             me->notifiee_ = n;
         }
-
-        float segTravCost(Segment::Ptr, bool);
-        float segTravTime(Segment::Ptr, bool);
-
     private:
-        string explore(
-            Location* loc, Location* dst,
-            Mile max_dist, Cost max_cost, Time max_time, bool expedited, bool exploration);
+        struct Path {
+            Location* end;
+            Mile length;
+            Cost cost;
+            Time time;
+            bool expedited;
+            string pathStr;
+            Path(Location* loc, string str, Mile l, Cost c, Time t, bool exp) :
+                end(loc), length(l), cost(c), time(t), expedited(exp), pathStr(str) {}
+        };
+        string connection(Location* start, Location* end);
+        string exploration(Location* start, ExplorationQuery & query);
+
+        void addPathWithSegment(Path &currPath, Segment::Ptr seg, queue<Path>& paths, bool strictExpedite);
+
+        float travelCost(Segment::Ptr, bool);
+        float travelTime(Segment::Ptr, bool);
+
         map<string,Location::Ptr> locationMap;
         map<string,Segment::Ptr> segmentMap;
         Fleet::Ptr fleet_;
-
     };
 
     class Percent : public Ordinal<Percent,float>{
@@ -165,7 +184,7 @@ namespace Shipping {
         void onSegmentDel(Segment::Ptr seg);
 
         enum StatsEntityType{
-            customer_,
+            customer_ = 0,
             port_,
             truckTerminal_,
             boatTerminal_,
@@ -202,11 +221,11 @@ namespace Shipping {
             SegmentReactor(Segment* n, ShippingNetworkReactor *snr) : parent(snr) { notifierIs(n); }      
             ShippingNetworkReactor * parent;
         };
+        map < string, SegmentReactor::Ptr > segmentreactors;
 
-        ShippingNetworkReactor(ShippingNetwork * sn) : expeditedSegments(0), ShippingNetwork::Notifiee() { notifierIs(sn); }
         unsigned int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
-        map < string, SegmentReactor::Ptr > segmentreactors;
+        ShippingNetworkReactor(ShippingNetwork * sn) : expeditedSegments(0), ShippingNetwork::Notifiee() { notifierIs(sn); }
     };
 
 }
