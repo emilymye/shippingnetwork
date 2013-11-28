@@ -214,8 +214,9 @@ namespace Shipping {
                     cerr << "invalid location for Segment source" << endl;
                     return;
                 }
-                if (source_->type()  <= Location::port() || (source_->type() - Location::terminalIdx()) == seg_->mode() ) {
-                    if (source_->segmentNew(seg_)) 
+                if ((source_->type()  <= Location::port() ) || 
+                    (source_->type() == Location::terminalIdx() + seg_->mode())) {
+                        source_->segmentNew(seg_);
                         seg_->sourceIs( sn_->location(v));
                 } else {
                     cerr << "cannot attach segment of this mode to location" << endl; 

@@ -5,7 +5,9 @@
 #include <map>
 #include <set>
 #include <iostream>
+#include <cstdio>
 using namespace std;
+
 namespace Shipping {
     ShippingNetwork::~ShippingNetwork(){
         for (map<string,Location::Ptr>::iterator it = locationMap.begin(); it!=locationMap.end(); ++it){
@@ -45,7 +47,7 @@ namespace Shipping {
 
     // ----------| Attribute Implementation | --------//
     Location::Ptr ShippingNetwork::locationNew( Location::Ptr loc){
-        if (locationMap.find(loc->name()) != locationMap.end()) return 0;
+        if (locationMap.count(loc->name())) return 0;
         locationMap[loc->name()] = loc;
         if (notifiee_) {
             notifiee_->onLocationNew(loc);
@@ -65,18 +67,18 @@ namespace Shipping {
     }
 
     Segment::Ptr ShippingNetwork::segmentNew( Segment::Ptr seg ){
-        if (segmentMap.find(seg->name()) != segmentMap.end()) return 0;
+        if (segmentMap.count(seg->name())) return 0;
         segmentMap[seg->name()] = seg;
-        if (notifiee_) notifiee_->onSegmentNew(seg);
+        if (notifiee_) 
+            notifiee_->onSegmentNew(seg);
         return seg;
     }
     
     void ShippingNetwork::segmentDel( Fwk::String _name ){
-        if (segmentMap.find(_name) == segmentMap.end())
-            return;
-
+        if (!segmentMap.count(_name)) return;
         Segment::Ptr s = segmentMap[_name];
-        s->source()->segmentDel(s);
+        if (s->source())
+            s->source()->segmentDel(s);
         if (notifiee_) 
             notifiee_->onSegmentDel(s);
         segmentMap.erase(_name);
@@ -244,7 +246,6 @@ namespace Shipping {
     }
 
     void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) { 
-        cout << "ADD " << seg->name() << endl;
         if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]++;
         }
@@ -260,7 +261,6 @@ namespace Shipping {
         segmentreactors[seg->name()] = SegmentReactor::SegmentReactorIs(seg.ptr(), this);
     }
     void ShippingNetworkReactor::onSegmentDel(Segment::Ptr seg) {
-        cout << "DEL " << seg->name() << endl;
         if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]--;
         } else if (seg->mode() == Boat_) {

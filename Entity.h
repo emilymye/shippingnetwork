@@ -208,7 +208,7 @@ namespace Shipping{
         }
         void segmentDel( Segment::Ptr seg ) { 
             for (unsigned int i = 0; i < segment_.size(); i++){
-                if (segment_[i] == seg){
+                if (segment_[i]->name().compare(seg->name())){
                     segment_.erase( segment_.begin() + i);
                     return;
                 }
