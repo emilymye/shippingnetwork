@@ -41,9 +41,11 @@ namespace Shipping{
         Cost expedited() { return (value() * 1.5); }
              
     };
-    class Capacity : public Ordinal<Capacity, unsigned int> {
+    class Capacity : public Ordinal<Capacity, int> {
     public:
-        Capacity(unsigned int num) : Ordinal<Capacity,unsigned int>(num) {};
+        Capacity(int num) : Ordinal<Capacity, int>(num) {
+            if (num < 0) throw Fwk::RangeException("Capacity");
+        };
     };
 
     enum ShippingMode {
@@ -208,7 +210,7 @@ namespace Shipping{
         }
         void segmentDel( Segment::Ptr seg ) { 
             for (unsigned int i = 0; i < segment_.size(); i++){
-                if (segment_[i]->name().compare(seg->name())){
+                if (!segment_[i]->name().compare(seg->name())){
                     segment_.erase( segment_.begin() + i);
                     return;
                 }

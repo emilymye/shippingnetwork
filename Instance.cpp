@@ -109,7 +109,7 @@ namespace Shipping {
             }
         }
 
-        cerr << "Invalid attribute for Location: " << name << endl;
+        cerr << "Location does not have attribute/segment " << name << endl;
         return "";
     }
 
@@ -184,58 +184,66 @@ namespace Shipping {
     };
 
     string SegmentRep::attribute(const string& name) {
-        if (!name.compare(sourceStr)) {
+        if (!name.compare(sourceStr) && seg_->source()){
             return seg_->source()->name();
-        }
-        else if (!name.compare(lengthStr)) {
+        } else if (!name.compare(lengthStr)) {
             char *str = new char[MAXDIGITS];
             sprintf(str, "%.2f", seg_->length().value());
             return str;
-        }
-        else if (!name.compare(returnSegStr)) {
+        } else if (!name.compare(returnSegStr) && seg_->returnSegment()) {
             return seg_->returnSegment()->name();
-        }
-
-        else if (!name.compare(difficultyStr)) {
+        } else if (!name.compare(difficultyStr)) {
             char *str = new char[MAXDIGITS];
             sprintf(str, "%.2f", seg_->difficulty().value());
             return str;
-        }
-        else if (!name.compare(expSupportStr)) {
+        } else if (!name.compare(expSupportStr)) {
             return (seg_->expediteSupport()) ? "yes" : "no";
-        }
+        } 
+        cerr << "invalid Segment attribute: " << name << endl;
         return "";
     }
+
     void SegmentRep::attributeIs(const string& name, const string& v){
         try{
             if (!name.compare(sourceStr)) {
-                Location::Ptr source_ = sn_->location(v);
-                if (!source_) {
-                    cerr << "invalid location for Segment source" << endl;
+                Location* l = sn_->location(v);
+                if (!l && !v.empty()){
+                    cerr << "invalid source for Segment" << endl;
                     return;
                 }
-                if ((source_->type()  <= Location::port() ) || 
-                    (source_->type() == Location::terminalIdx() + seg_->mode())) {
-                        source_->segmentNew(seg_);
-                        seg_->sourceIs( sn_->location(v));
+                if (seg_->source() && seg_->source()->name().compare(v))
+                    seg_->source()->segmentDel(seg_);
+
+                seg_->sourceIs(l);
+
+                if (v.empty()) seg_->sourceIs(0);
+                else if (l->type()<= Location::port() || l->type() == Location::terminalIdx() + seg_->mode()){
+                    seg_->sourceIs(l);
+                    l->segmentNew(seg_);
                 } else {
                     cerr << "cannot attach segment of this mode to location" << endl; 
                     return;
                 }
             } else if (!name.compare(lengthStr)) {
                 seg_->lengthIs(atof(v.c_str()));
-            } else if (!name.compare(returnSegStr)) {
+            } else if (!name.compare(returnSegStr)) {              
                 Segment::Ptr rSeg = sn_->segment(v);
-                if (!rSeg) {
+                if (!rSeg && !v.empty()) {
                     cerr << "invalid segment for Segment returnSegment" << endl;
                     return;
                 }
                 seg_->returnSegmentIs( rSeg );
-                rSeg->returnSegmentIs( seg_ );
+                if (rSeg) 
+                    rSeg->returnSegmentIs( seg_ );
             } else if (!name.compare(difficultyStr)) {
                 seg_->difficultyIs( atof(v.c_str()));
-            } else if (!name.compare(expSupportStr)) {
-                seg_->expediteSupportIs( !v.compare("yes") ? true : false);
+            } else if (!name.compare(expSupportStr)){
+                if (!v.compare("yes"))
+                    seg_->expediteSupportIs(true);
+                else if (!v.compare("no")) 
+                    seg_->expediteSupportIs(false);
+            } else {
+                cerr << "Invalid segment attribute: " << name << endl;
             }
         } catch (Fwk::Exception e) {
             cerr << "invalid call to attributeIs() on segment" << endl;
@@ -280,7 +288,6 @@ namespace Shipping {
         Ptr<ManagerImpl> manager_;
     };
 
-
     string StatsRep::attribute(const string& name) {
         stringstream ss;
         if (!name.compare(expPercentStr)) {
@@ -302,6 +309,8 @@ namespace Shipping {
             ss << reactor_->shippingEntities( ShippingNetworkReactor::boatSegment() );
         } else if (name == planeSegmentStr) {
             ss << reactor_->shippingEntities( ShippingNetworkReactor::planeSegment() );
+        } else {
+            cerr << "Invalid Statistics attribute: " << name << endl;
         }
         string str;
         ss >> str;
@@ -325,6 +334,7 @@ namespace Shipping {
 
     string ConnRep::attribute(const string& name) {
         if (name.length() <= connTypeStrLen){
+            cerr << "Invalid Connection attribute: " << name << endl; 
             return "";
         } 
 
@@ -390,12 +400,10 @@ namespace Shipping {
         Fleet::Ptr fleet_;
     };
 
-
-
     string FleetRep::attribute(const string& name) {
         size_t idx = name.find(',');
         if (idx==std::string::npos) {
-            cerr << "invalid attribute for Fleet" << endl;
+            cerr << "invalid Fleet attribute: " << name << endl;
             return "";
         }
 
@@ -435,7 +443,7 @@ namespace Shipping {
     void FleetRep::attributeIs(const string& name, const string& v) {
         size_t idx = name.find(',');
         if (idx==std::string::npos) {
-            cerr << "invalid attribute for Fleet" << endl;  
+            cerr << "invalid Fleet attribute: " << name << endl; 
             return;
         }
 
@@ -444,7 +452,7 @@ namespace Shipping {
 
         ShippingMode m;
         if (!mode.compare("Truck")){
-            m = Fleet::truck();            
+           m = Fleet::truck();       
         } else if (!mode.compare("Boat")){
             m = Fleet::boat();
         } else if (!mode.compare("Plane")){

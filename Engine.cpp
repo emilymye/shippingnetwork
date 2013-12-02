@@ -115,7 +115,7 @@ namespace Shipping {
             if (currLoc->name().compare(end->name()) == 0) { 
                 // add "COST^TIME^EXPEDITED <path>$" to results
                 ss.str(""); 
-                ss << currPath.cost.value() <<" "<< currPath.time.value() << ((currPath.expedited) ? " yes;":" no;") << currPath.pathStr << endl;
+                ss << currPath.cost.value() <<" "<< currPath.time.value() << ((currPath.expedited) ? " yes; ":" no; ") << currPath.pathStr << endl;
                 
                 results += ss.str();
                 continue;
@@ -207,9 +207,8 @@ namespace Shipping {
     }
 
     float ShippingNetwork::travelCost(Segment::Ptr seg, bool expedited) {
-        return (seg->expediteSupport() && expedited) ? 
-            seg->length().value() * (fleet_->cost(seg->mode()).value()) * 1.5 : 
-            seg->length().value() * (fleet_->cost(seg->mode()).value());
+        float basecost = seg->length().value() * seg->difficulty().value() * (fleet_->cost(seg->mode()).value());
+        return (seg->expediteSupport() && expedited) ? basecost * 1.5 : basecost;
     }
 
     float ShippingNetwork::travelTime(Segment::Ptr seg, bool expedited) {
@@ -231,7 +230,6 @@ namespace Shipping {
         else if (loc->type() == loc->planeTerminal())
             entityCounts[planeTerminal_]++;
     }
-
     void ShippingNetworkReactor::onLocationDel(Location::Ptr loc) {
         if (loc->type() == loc->customer())
             entityCounts[customer_]--;
