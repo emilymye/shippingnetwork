@@ -232,9 +232,17 @@ namespace Shipping {
                     cerr << "invalid segment for Segment returnSegment" << endl;
                     return;
                 }
-                seg_->returnSegmentIs( rSeg );
-                if (rSeg) 
-                    rSeg->returnSegmentIs( seg_ );
+
+                if (seg_->returnSegment()) {
+                    seg_->returnSegment()->returnSegmentIs(0);
+                }
+
+                if (rSeg) {
+                    seg_->returnSegmentIs(rSeg.ptr());
+                    rSeg->returnSegmentIs(seg_.ptr());
+                } else {
+                    seg_->returnSegmentIs(0);
+                }
             } else if (!name.compare(difficultyStr)) {
                 seg_->difficultyIs( atof(v.c_str()));
             } else if (!name.compare(expSupportStr)){

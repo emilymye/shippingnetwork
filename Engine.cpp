@@ -73,7 +73,6 @@ namespace Shipping {
             notifiee_->onSegmentNew(seg);
         return seg;
     }
-    
     void ShippingNetwork::segmentDel( Fwk::String _name ){
         if (!segmentMap.count(_name)) return;
         Segment::Ptr s = segmentMap[_name];
@@ -140,7 +139,6 @@ namespace Shipping {
 
             //add path to result list if not start location only
             if (currPath.pathStr.find(")") != string::npos) {
-                //cout << "DSSDGS" << currPath.pathStr;
                 results += currPath.pathStr;
                 results += "\n";
             }
@@ -153,11 +151,11 @@ namespace Shipping {
                 //check constraints valid 
                 if (query.expedited && !seg->expediteSupport()) 
                     continue;
-                if ( query.maxCost <= (currPath.cost + travelCost(seg, query.expedited)) )
+                if ( query.maxCost < (currPath.cost + travelCost(seg, query.expedited)))
                     continue;
-                if ( currPath.time >= (query.maxTime + travelTime(seg, query.expedited)) )
+                if ( query.maxTime < (currPath.time + travelTime(seg, query.expedited)))
                     continue;
-                if ( currPath.length >= query.maxDist + seg->length())
+                if ( query.maxDist < (currPath.length + seg->length()))
                     continue;
 
                 addPathWithSegment(currPath, seg, paths, true);
@@ -207,14 +205,16 @@ namespace Shipping {
     }
 
     float ShippingNetwork::travelCost(Segment::Ptr seg, bool expedited) {
-        float basecost = seg->length().value() * seg->difficulty().value() * (fleet_->cost(seg->mode()).value());
-        return (seg->expediteSupport() && expedited) ? basecost * 1.5 : basecost;
+        float transCost = (fleet_) ? fleet_->cost(seg->mode()).value() : 1.0;
+        return (seg->expediteSupport() && expedited) ? seg->length().value() * seg->difficulty().value() * transCost * 1.5 : 
+            seg->length().value() * seg->difficulty().value() * transCost;
     }
 
     float ShippingNetwork::travelTime(Segment::Ptr seg, bool expedited) {
+        float transSpeed = (fleet_) ? fleet()->speed(seg->mode()).value() : 50;
+
         return (seg->expediteSupport() && expedited) ? 
-            seg->length().value() / (fleet()->speed(seg->mode()).value() * 1.3) :
-            seg->length().value() / fleet()->speed(seg->mode()).value();
+            seg->length().value() / (transSpeed * 1.3) : seg->length().value() / transSpeed;
     }
 
     /* -------------- || Shipping Network Reactor || -----------------------*/

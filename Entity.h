@@ -125,7 +125,7 @@ namespace Shipping{
 
         Segment::PtrConst returnSegment() const { return returnSegment_; }
         Segment::Ptr returnSegment() { return returnSegment_; }
-        void returnSegmentIs( Segment::Ptr returnSeg ) { returnSegment_ = returnSeg.ptr(); }
+        void returnSegmentIs( Segment* rs ) { returnSegment_ = rs; }
 
         Mile length() const { return length_; }
         void lengthIs( Mile newLength ) { length_ = newLength; }
@@ -354,7 +354,7 @@ namespace Shipping{
             Speed speed_;
             Capacity capacity_;
             Cost cost_;
-            FleetMode():speed_(50),capacity_(10),cost_(1) {}
+            FleetMode():speed_(50.f),capacity_(10),cost_(1.f) {}
         };
         Fleet (const Fleet&);
         explicit Fleet( Fwk::String _name): Fwk::NamedInterface(_name){ }
