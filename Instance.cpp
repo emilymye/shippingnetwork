@@ -26,9 +26,6 @@ namespace Shipping {
     static const string statsStr = "Stats";
     static const string connStr = "Conn";
     static const string fleetStr = "Fleet";
-    static const string truckStr = "Truck";
-    static const string boatStr = "Boat";
-    static const string planeStr = "Plane";
     static const string speedStr = "speed";
     static const string capacityStr = "capacity";
 
@@ -253,7 +250,7 @@ namespace Shipping {
             } else {
                 cerr << "Invalid segment attribute: " << name << endl;
             }
-        } catch (Fwk::Exception e) {
+        } catch (Fwk::Exception & e) {
             cerr << "invalid call to attributeIs() on segment" << endl;
         }
     }
@@ -292,8 +289,8 @@ namespace Shipping {
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
     private:
-        ShippingNetworkReactor::Ptr reactor_;
         Ptr<ManagerImpl> manager_;
+        ShippingNetworkReactor::Ptr reactor_;
     };
 
     string StatsRep::attribute(const string& name) {
@@ -385,7 +382,7 @@ namespace Shipping {
                 ss >> endLoc;
                 return network_->path(startLoc, endLoc);
             }
-        } catch (Fwk::Exception e) {
+        } catch (Fwk::Exception & e) {
             cerr << "Invalid attribute for Connection" << endl;
             return "";
         }
@@ -478,14 +475,14 @@ namespace Shipping {
             } else if (!property.compare(capacityStr)){
                 fleet_->capacityIs(m,atoi(v.c_str()));
             } 
-        } catch (Fwk::Exception e) {
+        } catch (Fwk::Exception & e) {
             cerr << "Error setting attribute " << name << " to " << v << endl;
         } 
 
 
     }
 
-    ManagerImpl::ManagerImpl() {
+    ManagerImpl::ManagerImpl() : statsCreated(false),connCreated(false),fleetCreated(false) {
         network_ = ShippingNetwork::ShippingNetworkNew("network");
         reactor_ = ShippingNetworkReactor::ShippingNetworkReactorIs(network_.ptr());
     }

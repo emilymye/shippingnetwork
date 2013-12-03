@@ -22,3 +22,7 @@ Thumbs.db
 test1.exe.stackdump
 .DS_Store
 *.tar
+/.cproject
+/.project
+/example
+/test1

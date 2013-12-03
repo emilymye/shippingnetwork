@@ -52,7 +52,8 @@ namespace Shipping {
                 Ptr m = new NotifieeConst();
                 return m;
             }
-            virtual void onSegmentExpediteChange( int diff ) {};
+
+            virtual void onSegmentExpediteChange(bool) {};
             virtual void onLocationNew( Location::Ptr ) {};
             virtual void onSegmentNew( Segment::Ptr ) {};
             virtual void onLocationDel( Location::Ptr ) {};
@@ -121,7 +122,7 @@ namespace Shipping {
             return exploration(start, query);
         }
     protected:
-        ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0) {}
+        ShippingNetwork(Fwk::String _name) : Fwk::NamedInterface (_name), fleet_(0), notifiee_(0) {}
         ShippingNetwork::NotifieeConst * notifiee_;
 
         void newNotifiee( ShippingNetwork::NotifieeConst * n ) const {
@@ -177,7 +178,7 @@ namespace Shipping {
             return m;
         }
 
-        void onSegmentExpediteChange( bool newExpedited ) { expeditedSegments += ((newExpedited) ? 1 : 0); }
+        void onSegmentExpediteChange( bool newExpedited );
         void onLocationNew(Location::Ptr loc);
         void onSegmentNew(Segment::Ptr seg);
         void onLocationDel(Location::Ptr loc);
@@ -225,7 +226,7 @@ namespace Shipping {
 
         unsigned int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
-        ShippingNetworkReactor(ShippingNetwork * sn) : expeditedSegments(0), ShippingNetwork::Notifiee() { notifierIs(sn); }
+        ShippingNetworkReactor(ShippingNetwork * sn) : ShippingNetwork::Notifiee() , expeditedSegments(0){ notifierIs(sn); }
     };
 
 }

@@ -218,6 +218,11 @@ namespace Shipping {
     }
 
     /* -------------- || Shipping Network Reactor || -----------------------*/
+    void ShippingNetworkReactor::onSegmentExpediteChange( bool newExpedited )
+    {
+    	expeditedSegments += ((newExpedited) ? 1 : 0);
+    }
+
     void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
         if (loc->type() == loc->customer())
             entityCounts[customer_]++;
