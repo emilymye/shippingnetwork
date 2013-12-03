@@ -47,7 +47,7 @@ namespace Shipping {
 
     // ----------| Attribute Implementation | --------//
     Location::Ptr ShippingNetwork::locationNew( Location::Ptr loc){
-        if (locationMap.count(loc->name())) return 0;
+        if (locationMap.count(loc->name())) return NULL;
         locationMap[loc->name()] = loc;
         if (notifiee_) {
             notifiee_->onLocationNew(loc);
@@ -222,8 +222,8 @@ namespace Shipping {
     {
     	expeditedSegments += ((newExpedited) ? 1 : 0);
     }
-
     void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
+        if (!loc) return;
         if (loc->type() == loc->customer())
             entityCounts[customer_]++;
         else if (loc->type() == loc->port())
@@ -236,6 +236,7 @@ namespace Shipping {
             entityCounts[planeTerminal_]++;
     }
     void ShippingNetworkReactor::onLocationDel(Location::Ptr loc) {
+    	if (!loc) return;
         if (loc->type() == loc->customer())
             entityCounts[customer_]--;
         else if (loc->type() == loc->port())
@@ -249,6 +250,7 @@ namespace Shipping {
     }
 
     void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) { 
+    	if (!seg) return;
         if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]++;
         }
@@ -264,6 +266,7 @@ namespace Shipping {
         segmentreactors[seg->name()] = SegmentReactor::SegmentReactorIs(seg.ptr(), this);
     }
     void ShippingNetworkReactor::onSegmentDel(Segment::Ptr seg) {
+    	if (!seg) return;
         if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]--;
         } else if (seg->mode() == Boat_) {
@@ -284,118 +287,4 @@ namespace Shipping {
         unsigned int segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
         return (100.f * (float) expeditedSegments / (float) segmentCount);
     }
-
 }
-
-//----------| PRIVATE CALLS |----//
-//typedef struct Node {
-//    Location *loc;
-//    string *path;
-//    float dist;
-//    float cost;
-//    float time;
-//    Node (Location * l, string * p) : loc(l), path(p), dist(0.f), cost(0.f), time(0.f) {}
-//} Node_T;
-
-/* Explore - explore:true, loc:start location, dst:NULL, 
-if not needed , set max_dist:FLT_MAX, max_cost:FLT_MAX, max_time:FLT_MAX, expedited:false
-Connect - explore:false, loc:start location, dst:end location,
-max_dist, max_cost, max_time can be any value. If not needed, set expedited:false
-string ShippingNetwork::explore(Location* loc, Location* dst, Mile max_dist, Cost max_cost, 
-Time max_time, bool expedited, bool exploration) {
-map<string, bool> nodes_traversed;
-std::queue<Node_T> search_queue;
-
-std::stringstream ss;
-int pass = (exploration && expedited) ? 1 : 0; 
-
-map<string, bool> exploration_path_printed;
-
-// traverse (at most) two times. First time non-expedited, second time (if requested) expedited 
-for (; pass < 2; pass++) { // pass=0:non-expedited  pass=1:expedited
-Node_T node = Node_T(loc, new string (loc->name()));
-search_queue.push(node);
-
-nodes_traversed.erase(nodes_traversed.begin(), nodes_traversed.end());
-nodes_traversed[loc->name()] = true;
-
-while (!search_queue.empty()) {
-Location *current_loc = search_queue.front().loc;
-string *current_path = search_queue.front().path;
-Mile current_distance = search_queue.front().dist;
-Cost current_cost = search_queue.front().cost;
-Time current_time = search_queue.front().time;
-search_queue.pop();
-
-if (!exploration && current_loc == dst) { // print path
-if (!pass) { // non-expedited
-ss.precision(2);
-ss << fixed << current_cost.value() << ' ';
-ss.precision(4);
-ss << fixed << current_time.value() << " no; " << *current_path << endl;
-}
-else { //expedited
-ss.precision(2);
-ss << fixed << current_cost.value() << ' ';
-ss.precision(4);
-ss << fixed << current_time.value() << " yes; " << *current_path << endl;
-}
-}
-
-bool newNode = false;
-for (unsigned int i = 1; i <= current_loc->segments(); i++) {
-Segment::Ptr seg = current_loc->segment(i);
-if (pass == 1 && !seg->expediteSupport()) {
-continue;
-}
-if (exploration && (current_distance + seg->length() > max_dist)) { // distance
-continue;
-}
-if (!pass) { // non-expedited
-if ( (exploration && (current_cost + travelCost(seg, false) > max_cost)) || // cost
-(exploration && (current_time + travelTime(seg, false) > max_time)) ) { // time
-continue;
-}
-} else { // expedited
-if ((exploration && (current_cost + travelCost(seg, true) > max_cost)) || // cost
-(exploration && (current_time + travelTime(seg, true) > max_time))) { // time
-continue;
-}
-}
-
-Location *seg_end = seg->returnSegment()->source();
-if (nodes_traversed.find(seg_end->name()) == nodes_traversed.end()){
-nodes_traversed[seg_end->name()] = true;
-Node_T node (seg_end, new string(*current_path));
-stringstream append_ss;
-append_ss.precision(2);
-append_ss << "(" << seg->name() << ":" << fixed << seg->length().value() << 
-":" << seg->name() << ") " << seg_end->name();
-string appendStr = append_ss.str();
-node.path->append(appendStr);
-node.dist = current_distance.value() + seg->length().value();
-if (pass == 0) { // non-expedited
-node.cost = current_cost.value() + travelCost(seg, false);
-node.time = current_time.value() + travelTime(seg, false);
-}
-else { // expedited
-node.cost = current_cost.value() + travelCost(seg, true);
-node.time = current_time.value() + travelTime(seg, true);
-}
-search_queue.push(node);
-newNode = true;
-
-if (exploration) { // print path
-if (exploration_path_printed.find(*(node.path)) == exploration_path_printed.end()) {
-exploration_path_printed[*(node.path)] = true;
-ss <<  *(node.path) << endl;
-}
-}
-}
-}
-delete current_path;
-}
-}
-return ss.str();
-}
-*/
