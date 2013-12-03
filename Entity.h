@@ -373,5 +373,33 @@ protected:
 	PlaneSegment( Fwk::String _name) : Segment(_name, Shipping::Plane_) {}
 };
 
+class Time : public Ordinal<Time,double> {
+public:
+	Time(double time) : Ordinal<Time,double>(time){}
+};
+
+class Shipment : public Fwk::NamedInterface {
+public:
+	typedef Fwk::Ptr<Shipment const> PtrConst;
+	typedef Fwk::Ptr<Shipment> Ptr;
+	Shipment::Ptr ShipmentNew( Fwk::String name );
+
+	Capacity packages() const { return packages_; }
+	void packagesIs( unsigned int _packages ) {}
+
+	Location::Ptr source();
+	void sourceIs(Location::Ptr s);
+
+	Location::Ptr destination();
+	void destinationIs(Location::Ptr l);
+protected:
+	Shipment( const Shipment&);
+	explicit Shipment(Fwk::String _name) :
+			Fwk::NamedInterface(_name), packages_(0), source_(0), destination_(0){}
+	Capacity packages_;
+	Location* source_;
+	Location* destination_;
+};
+
 } /* end namespace */
 #endif
