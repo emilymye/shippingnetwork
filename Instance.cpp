@@ -251,7 +251,7 @@ void SegmentRep::attributeIs(const string& name, const string& v){
 			seg_->expediteSupportIs(false);
 	} else {
 		cerr << "Invalid segment attribute: " << name << endl;
-		throw Fwk::AttributeNotSupportedException("Segment " + name)
+		throw Fwk::AttributeNotSupportedException("Segment " + name);
 	}
 	//	} catch (Fwk::Exception & e) {
 	//		cerr << "invalid Segment attributeIs()" << endl;
