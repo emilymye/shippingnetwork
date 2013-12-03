@@ -186,6 +186,13 @@ public:
 		if (notifiee_) notifiee_->onExpediteChange(support);
 		expediteSupport_ = support;
 	}
+
+	Capacity shipmentCapacity() const { return shipmentCap_; }
+	Capacity shipmentCapacity( Capacity & c) { shipmentCap_ = c; }
+
+	Capacity receivedShipments() const { return recievedShip_; }
+	Capacity refusedShipments() const { return refusedShip_; }
+
 	protected:
 	Segment::NotifieeConst * notifiee_;
 	void newNotifiee( Segment::NotifieeConst * n ) const {
@@ -202,7 +209,8 @@ public:
 	}
 	Segment (const Segment&);
 	Segment(Fwk::String _name, ShippingMode _mode) :
-		Fwk::NamedInterface(_name), mode_(_mode), length_(0.f),difficulty_(1.f), expediteSupport_(false) {}
+		Fwk::NamedInterface(_name), mode_(_mode), length_(0.f),difficulty_(1.f), expediteSupport_(false),
+		shipmentCap_(10), recievedShip_(0), refusedShip_(0) {}
 	mutable Segment::Ptr fwkHmNext_;
 
 	ShippingMode mode_;
@@ -211,6 +219,9 @@ public:
 	Mile length_;
 	Difficulty difficulty_;
 	bool expediteSupport_;
+	Capacity shipmentCap_;
+	Capacity recievedShip_;
+	Capacity refusedShip_;
 };
 
 // START LOCATION CLASSES ===============================================
