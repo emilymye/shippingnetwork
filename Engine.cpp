@@ -193,11 +193,6 @@ namespace Shipping {
 
     /* ==== SHIPPING NETWORK REACTOR =========================*/
 
-        void ShippingNetworkReactor::onSegmentExpediteChange( bool newExpedited )
-    {
-        expeditedSegments += ((newExpedited) ? 1 : 0);
-    }
-
     void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
         if (!loc) return;
         if (loc->type() == loc->customer())
@@ -239,9 +234,8 @@ namespace Shipping {
         }
         if (seg->expediteSupport()) 
             expeditedSegments++;
-
-        segmentreactors[seg->name()] = new SegmentReactor(seg.ptr(), this);
     }
+
     void ShippingNetworkReactor::onSegmentDel(Segment::Ptr seg) {
         if (!seg) return;
         if (seg->mode() == Truck_) {
@@ -253,15 +247,10 @@ namespace Shipping {
         }
         if (seg->expediteSupport())
             expeditedSegments--;
-        segmentreactors.erase(seg->name());
     }
 
     unsigned int ShippingNetworkReactor::shippingEntities(StatsEntityType type) {
         if (type >= SHIPPING_ENTITY_COUNT) return 0;
         return entityCounts[type];
-    }
-    Percent ShippingNetworkReactor::expeditedPercent() {
-        unsigned int segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
-        return (100.f * (float) expeditedSegments / (float) segmentCount);
     }
 }

@@ -5,60 +5,58 @@
 #include "String.h"
 #include "Ptr.h"
 #include "PtrInterface.h"
-#include "Instance.h"
 #include "Nominal.h"
 #include "Notifiee.h"
 #include "Activity.h"
 
-class Difficulty : public Ordinal<Difficulty,float> {
-public:
-    Difficulty(float num = 1.0) : Ordinal<Difficulty, float>(num){
-        if ( num < 1.0 || num > 5.0 ){
-            cerr << "Invalid Difficulty value: " << num << endl;
-            throw Fwk::RangeException("Difficulty");
-        }
-    }
-};
-class Mile : public Ordinal<Mile, float> {
-public:
-    Mile(float num) : Ordinal<Mile,float>(num) {
-        if (num < 0.f) {
-            cerr << "Invalid Mile value: " << num << endl;
-            throw Fwk::RangeException("Mile");
-        }
-    };
-};
-class Speed : public Ordinal<Speed, float> {
-public:
-    Speed(float num) : Ordinal<Speed, float>(num){
-        if (num < 0.f ) {
-            cerr << "Invalid Speed value: " << num << endl;
-            throw Fwk::RangeException("Speed");
-        }
-    }
-};
-class Cost : public Ordinal<Cost, float> {
-public:
-    Cost(float num) : Ordinal<Cost, float>(num){
-        if (num < 0.f ) {
-            cerr << "Invalid Cost value: " << num << endl;
-            throw Fwk::RangeException("Cost");
-        }
-    }
-    Cost expedited() { return (value() * 1.5); }
-
-};
-class Capacity : public Ordinal<Capacity, int> {
-public:
-    Capacity(int num) : Ordinal<Capacity, int>(num) {
-        if (num < 0) {
-            cerr << "Invalid Capacity value: " << num << endl;
-            throw Fwk::RangeException("Capacity");
-        }
-    };
-};
-
 namespace Shipping{
+    class Capacity : public Ordinal<Capacity, int> {
+    public:
+        Capacity(int num) : Ordinal<Capacity, int>(num) {
+            if (num < 0) {
+                cerr << "Invalid Capacity value: " << num << endl;
+                throw Fwk::RangeException("Capacity");
+            }
+        };
+    };
+    class Difficulty : public Ordinal<Difficulty,float> {
+    public:
+        Difficulty(float num = 1.0) : Ordinal<Difficulty, float>(num){
+            if ( num < 1.0 || num > 5.0 ){
+                cerr << "Invalid Difficulty value: " << num << endl;
+                throw Fwk::RangeException("Difficulty");
+            }
+        }
+    };
+    class Mile : public Ordinal<Mile, float> {
+    public:
+        Mile(float num) : Ordinal<Mile,float>(num) {
+            if (num < 0.f) {
+                cerr << "Invalid Mile value: " << num << endl;
+                throw Fwk::RangeException("Mile");
+            }
+        };
+    };
+    class Speed : public Ordinal<Speed, float> {
+    public:
+        Speed(float num) : Ordinal<Speed, float>(num){
+            if (num < 0.f ) {
+                cerr << "Invalid Speed value: " << num << endl;
+                throw Fwk::RangeException("Speed");
+            }
+        }
+    };
+    class Cost : public Ordinal<Cost, float> {
+    public:
+        Cost(float num) : Ordinal<Cost, float>(num){
+            if (num < 0.f ) {
+                cerr << "Invalid Cost value: " << num << endl;
+                throw Fwk::RangeException("Cost");
+            }
+        }
+        Cost expedited() { return (value() * 1.5); }
+
+    };
     using namespace std;
 
     enum ShippingMode { Truck_, Boat_, Plane_, 
@@ -104,6 +102,14 @@ namespace Shipping{
 
     class Location;
 
+    struct Shipment {
+        Capacity packages_;
+        Location* source_;
+        Location* destination_;
+        Shipment( Location* src, Location* dest, Capacity packages)
+            : source_(src), destination_(dest), packages_(packages) {}
+    };
+
     class Segment : public Fwk::PtrInterface<Segment> {
     public:
         typedef Fwk::Ptr<Segment> Ptr;
@@ -127,23 +133,22 @@ namespace Shipping{
 
         bool expediteSupport() const { return expediteSupport_; }
         void expediteSupportIs( bool support ) {
-            if (support == expediteSupport_) return;
-            if (notifiee_) notifiee_->onExpediteChange(support);
             expediteSupport_ = support;
         }
 
+        Capacity receivedShipments() const { return recievedShip_; }
+        Capacity refusedShipments() const { return refusedShip_; }
         Capacity shipmentCapacity() const { return shipmentCap_; }
         Capacity shipmentCapacity( Capacity & c) { shipmentCap_ = c; }
 
-        Capacity receivedShipments() const { return recievedShip_; }
-        Capacity refusedShipments() const { return refusedShip_; }
         virtual string name() const { return name_; }
 
         class Notifiee : public Fwk::BaseNotifiee<Segment> {
         public:
             typedef Fwk::Ptr<Notifiee> Ptr;
             Notifiee(Segment* s) : Fwk::BaseNotifiee<Segment>(s) {}
-            virtual void onExpediteChange(bool) {}
+            
+            virtual void onShipment(Shipment*) {}
         };
 
         virtual Segment::Notifiee::Ptr notifiee() const { return notifiee_; }
@@ -159,7 +164,7 @@ namespace Shipping{
             length_(0.f),difficulty_(1.f), expediteSupport_(false),
             shipmentCap_(10), recievedShip_(0), refusedShip_(0) {}
         Fwk::String name_;
-        
+
         ShippingMode mode_;
         Segment::Notifiee * notifiee_;
         Location * source_;
@@ -168,10 +173,10 @@ namespace Shipping{
         Mile length_;
         Difficulty difficulty_;
         bool expediteSupport_;
+
         Capacity shipmentCap_;
         Capacity recievedShip_;
         Capacity refusedShip_;
-
     };
 
     // START LOCATION CLASSES ===============================================
@@ -220,11 +225,25 @@ namespace Shipping{
             }
         }
 
+        class Notifiee : public Fwk::BaseNotifiee<Location> {
+        public:
+            typedef Fwk::Ptr<Notifiee> Ptr;
+            Notifiee(Location* s) : Fwk::BaseNotifiee<Location>(s) {}
+            virtual void onShipment(Shipment* ) {}
+        };
+        virtual Location::Notifiee::Ptr notifiee() const { return notifiee_; }
+        virtual void lastNotifieeIs(Notifiee* n) {
+            Location* me = const_cast<Location*>(this);
+            me->notifiee_ = n;
+        }
+
         virtual string name() const { return name_; }
     protected:
         Location ( const Location&);
         explicit Location(Fwk::String name, LocationType _type) : name_(name), type_(_type) {}
         mutable Location::Ptr fwkHmNext_;
+        Location::Notifiee * notifiee_;
+
         LocationType type_;
         std::vector<Segment::Ptr> segment_;
         Fwk::String name_;
@@ -239,10 +258,58 @@ namespace Shipping{
             Ptr m = new CustomerLocation(_name);
             return m;
         }
+
+        class Notifiee : public Fwk::BaseNotifiee<CustomerLocation>{
+        public:
+            typedef Fwk::Ptr<Notifiee> Ptr;
+            Notifiee(CustomerLocation* l) : Fwk::BaseNotifiee<CustomerLocation>(l) {}
+            virtual void onTransferRate(Capacity) {}
+            virtual void onSize(Capacity) {}
+            virtual void onDestination(Location::Ptr) {}
+        };
+
+        virtual void lastNotifieeIs(CustomerLocation::Notifiee* n) {
+            CustomerLocation* me = const_cast<CustomerLocation*>(this);
+            me->notifiee_ = n;
+        }
+
+        Capacity transferRate() const { return rate_; }
+        void transferRateIs( Capacity rate ) {
+            if (notifiee_) notifiee_->onTransferRate( rate );
+            rate_ = rate;
+        }
+
+        Capacity size() const { return size_; }
+        void sizeIs( Capacity rate ) {
+            if (notifiee_) notifiee_->onSize( rate );
+            rate_ = rate;
+        }
+
+        Location* destination() const { return dest_; }
+        void destinationIs( Location * dest ) {
+            if (notifiee_) notifiee_->onDestination( dest );
+            dest_ = dest;
+        }
+
+        Capacity recieved() const { return recieved_; }
+        Time latency() const { return latency_; }
+        Cost totalCost() const { return total_; }
     protected:
+        CustomerLocation::Notifiee::Ptr notifiee_;
+        Capacity rate_;
+        Capacity size_;
+        Location * dest_;
+
+        Capacity recieved_;
+        Time latency_;
+        Cost total_; 
+
         CustomerLocation (const CustomerLocation& );
-        CustomerLocation( Fwk::String _name) : Location(_name, Location::customer_) {}
+        CustomerLocation( Fwk::String _name) : Location(_name, Location::customer_), 
+            rate_(0), size_(0), dest_(NULL),
+            recieved_(0), latency_(0.0), total_(0.f){}
     };
+
     class PortLocation : public Location {
     public:
         typedef Fwk::Ptr<PortLocation const> PtrConst;
@@ -331,30 +398,5 @@ namespace Shipping{
         PlaneSegment (const TruckSegment& );
         PlaneSegment( Fwk::String _name) : Segment(_name, Shipping::Plane_) {}
     };
-
-    class Shipment : public Fwk::PtrInterface<Shipment> {
-    public:
-        typedef Fwk::Ptr<Shipment const> PtrConst;
-        typedef Fwk::Ptr<Shipment> Ptr;
-        Shipment::Ptr ShipmentNew( Fwk::String name );
-
-        Capacity packages() const { return packages_; }
-        void packagesIs( unsigned int _packages ) {}
-
-        Location::Ptr source();
-        void sourceIs(Location::Ptr s);
-
-        Location::Ptr destination();
-        void destinationIs(Location::Ptr l);
-    protected:
-        Shipment( const Shipment&);
-        explicit Shipment(Fwk::String name) :
-        name_(name), packages_(0), source_(NULL), destination_(NULL){}
-        Capacity packages_;
-        Location* source_;
-        Location* destination_;
-        Fwk::String name_;
-    };
-
 } /* end namespace */
 #endif

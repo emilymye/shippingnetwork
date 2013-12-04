@@ -95,9 +95,10 @@ namespace Shipping {
         //=========== END NOTIFIEE ================
 
     protected:
-        ShippingNetwork() : fleet_(NULL), notifiee_(NULL) {}
+        ShippingNetwork() : fleet_(NULL), notifiee_(NULL) { } 
     private:
         ShippingNetwork::Notifiee * notifiee_;
+
         map<string,Location::Ptr> locationMap;
         map<string,Segment::Ptr> segmentMap;
         Fleet::Ptr fleet_;
@@ -134,8 +135,6 @@ namespace Shipping {
     public:
         ShippingNetworkReactor(ShippingNetwork * sn) 
             : ShippingNetwork::Notifiee(sn), expeditedSegments(0) {}
-
-        void onSegmentExpediteChange( bool newExpedited );
         void onLocationNew(Location::Ptr loc);
         void onSegmentNew(Segment::Ptr seg);
         void onLocationDel(Location::Ptr loc);
@@ -162,22 +161,10 @@ namespace Shipping {
         static inline StatsEntityType planeSegment() { return planeSegment_; };
 
         unsigned int shippingEntities( StatsEntityType type );
-        Percent expeditedPercent();
-
-        class SegmentReactor : public Segment::Notifiee {
-        public:
-            SegmentReactor(Segment* n, ShippingNetworkReactor *snr) : Segment::Notifiee(n), networkReactor(snr) {}
-            void onExpediteChange( bool isExpedited ) {
-                if (networkReactor != NULL) 
-                    networkReactor->onSegmentExpediteChange(isExpedited);
-            }
-        private:
-            ShippingNetworkReactor * networkReactor;
-        };
+        Percent expeditedPercent() { return 0.f; } //For ASSN3 no expedited segments
 
     private:
-        map < string, SegmentReactor* > segmentreactors;
-        unsigned int expeditedSegments;
+        int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
     };
 }

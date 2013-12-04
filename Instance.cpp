@@ -1,3 +1,4 @@
+#include <string>
 #include <iostream>
 #include <sstream>
 #include <map>
@@ -87,8 +88,8 @@ class LocationRep : public Instance {
 public:
 	LocationRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr network) :
 		Instance(name), manager_(manager), network_(network){}
-	string attribute(const string& name);
-	void attributeIs(const string& name, const string& v);
+	virtual string attribute(const string& name);
+	virtual void attributeIs(const string& name, const string& v);
 protected:
 	Ptr<Location> loc_;
 	Ptr<ManagerImpl> manager_;
@@ -128,7 +129,33 @@ public:
 		loc_ = CustomerLocation::CustomerLocationNew(name);
 		network_->locationNew(loc_);
 	}
+    string attribute(const string& name);
+    void attributeIs(const string& name, const string& v);
 };
+
+static const string sourceString = "source";
+static const string destString = "destination";
+static const string transferRateString = "transfer rate";
+static const string destinationString = "destination";
+
+string CustomerRep::attribute(const string& name) {
+	if (name.length() > segmentStrlen) {
+		int idx = segmentNumber(name);
+		if (idx) {
+			Segment::Ptr s = loc_->segment(idx);
+			if (s) return s->name();
+		}
+	}
+
+	cerr << "Customer - Invalid attribute/segment " << name << endl;
+	return "";
+}
+
+void CustomerRep::attributeIs(const string& name, const string& v) {
+
+
+}
+
 class PortRep : public LocationRep {
 public:
 	PortRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) :
