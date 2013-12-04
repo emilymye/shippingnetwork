@@ -191,7 +191,7 @@ namespace Shipping {
             seg->length().value() / (transSpeed * 1.3) : seg->length().value() / transSpeed;
     }
 
-    /* ========================= SHIPPING NETWORK REACTOR =========================*/
+    /* ==== SHIPPING NETWORK REACTOR =========================*/
 
         void ShippingNetworkReactor::onSegmentExpediteChange( bool newExpedited )
     {

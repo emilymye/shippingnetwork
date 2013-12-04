@@ -154,22 +154,24 @@ namespace Shipping{
 
     protected:
         Segment (const Segment&);
-        Segment(Fwk::String _name, ShippingMode _mode) 
-            : name_(_name), notifiee_(NULL), 
-            mode_(_mode), length_(0.f),difficulty_(1.f), expediteSupport_(false),
+        Segment(Fwk::String _name, ShippingMode _mode) : name_(_name), mode_(_mode), 
+            notifiee_(NULL), source_(NULL), returnSegment_(NULL),
+            length_(0.f),difficulty_(1.f), expediteSupport_(false),
             shipmentCap_(10), recievedShip_(0), refusedShip_(0) {}
-        Segment::Notifiee * notifiee_;
-
+        Fwk::String name_;
+        
         ShippingMode mode_;
+        Segment::Notifiee * notifiee_;
         Location * source_;
         Segment* returnSegment_;
+
         Mile length_;
         Difficulty difficulty_;
         bool expediteSupport_;
         Capacity shipmentCap_;
         Capacity recievedShip_;
         Capacity refusedShip_;
-        Fwk::String name_;
+
     };
 
     // START LOCATION CLASSES ===============================================
@@ -347,7 +349,7 @@ namespace Shipping{
     protected:
         Shipment( const Shipment&);
         explicit Shipment(Fwk::String name) :
-        name_(name), packages_(0), source_(0), destination_(0){}
+        name_(name), packages_(0), source_(NULL), destination_(NULL){}
         Capacity packages_;
         Location* source_;
         Location* destination_;

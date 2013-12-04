@@ -117,7 +117,7 @@ string LocationRep::attribute(const string& name) {
 
 void LocationRep::attributeIs(const string& name, const string& v) {
 	cerr << "Cannot set Location attributes\n" << endl;
-	throw Fwk::AttributeNotSupportedException("Location " + name);
+	//throw Fwk::AttributeNotSupportedException("Location " + name);
 }
 
 //LOCATION INSTANCES SUBCLASSES
@@ -200,61 +200,59 @@ string SegmentRep::attribute(const string& name) {
 }
 
 void SegmentRep::attributeIs(const string& name, const string& v){
-	//	try{
-	if (!name.compare(sourceStr)) { //setting source
-		Location* l = sn_->location(v);
-		if (!l && !v.empty()){
-			cerr << "invalid source for Segment location" << endl;
-			throw Fwk::EntityNotFoundException("Segment location");
-		}
+	try{
+		if (!name.compare(sourceStr)) { //setting source
+			Location* l = sn_->location(v);
+			if (!l && !v.empty()){
+				cerr << "invalid source for Segment location" << endl;
+				throw Fwk::EntityNotFoundException("Segment location");
+			}
+			if (v.empty()) {
+				if (seg_->source())
+					seg_->source()->segmentDel(seg_);
+				seg_->sourceIs(0);
+			} else if ( l->type() <= Location::port() || l->type() == Location::terminalIdx() + seg_->mode()) {
+				if (seg_->source())
+					seg_->source()->segmentDel(seg_);
+				seg_->sourceIs(l);
+				l->segmentNew(seg_);
+			} else {
+				cerr << "cannot attach segment of this mode to location" << endl;
+				return;
+			}
+		} else if (!name.compare(returnSegStr)) { //set return segment
+			Segment::Ptr rSeg = sn_->segment(v);
+			if (!rSeg && !v.empty()) {
+				cerr << "invalid segment for Segment returnSegment" << endl;
+				throw Fwk::EntityNotFoundException("Segment returnSegment");
+			}
 
-		if (seg_->source() && seg_->source()->name().compare(v))
-			seg_->source()->segmentDel(seg_);
-		seg_->sourceIs(l);
+			if (seg_->returnSegment()) {
+				seg_->returnSegment()->returnSegmentIs(0);
+			}
 
-		if (v.empty()) {
-			seg_->sourceIs(0);
-		} else if (l->type()<= Location::port() || l->type() == Location::terminalIdx() + seg_->mode()){
-			seg_->sourceIs(l);
-			l->segmentNew(seg_);
+			if (rSeg) {
+				seg_->returnSegmentIs(rSeg.ptr());
+				rSeg->returnSegmentIs(seg_.ptr());
+			} else {
+				seg_->returnSegmentIs(0);
+			}
+		} else if (!name.compare(lengthStr)) {
+			seg_->lengthIs(atof(v.c_str()));
+		} else if (!name.compare(difficultyStr)) {
+			seg_->difficultyIs( atof(v.c_str()));
+		} else if (!name.compare(expSupportStr)){
+			if (!v.compare("yes"))
+				seg_->expediteSupportIs(true);
+			else if (!v.compare("no"))
+				seg_->expediteSupportIs(false);
 		} else {
-			cerr << "cannot attach segment of this mode to location" << endl;
-			return;
+			cerr << "Invalid segment attribute: " << name << endl;
+			throw Fwk::AttributeNotSupportedException("Segment " + name);
 		}
-	} else if (!name.compare(returnSegStr)) { //set return segment
-		Segment::Ptr rSeg = sn_->segment(v);
-		if (!rSeg && !v.empty()) {
-			cerr << "invalid segment for Segment returnSegment" << endl;
-			throw Fwk::EntityNotFoundException("Segment returnSegment");
-		}
-
-		if (seg_->returnSegment()) {
-			seg_->returnSegment()->returnSegmentIs(0);
-		}
-
-		if (rSeg) {
-			seg_->returnSegmentIs(rSeg.ptr());
-			rSeg->returnSegmentIs(seg_.ptr());
-		} else {
-			seg_->returnSegmentIs(0);
-		}
-	} else if (!name.compare(lengthStr)) {
-		seg_->lengthIs(atof(v.c_str()));
-	} else if (!name.compare(difficultyStr)) {
-		seg_->difficultyIs( atof(v.c_str()));
-	} else if (!name.compare(expSupportStr)){
-		if (!v.compare("yes"))
-			seg_->expediteSupportIs(true);
-		else if (!v.compare("no"))
-			seg_->expediteSupportIs(false);
-	} else {
-		cerr << "Invalid segment attribute: " << name << endl;
-		throw Fwk::AttributeNotSupportedException("Segment " + name);
+	} catch (Fwk::Exception & e) {
+		cerr << "invalid Segment attributeIs()" << endl;
 	}
-	//	} catch (Fwk::Exception & e) {
-	//		cerr << "invalid Segment attributeIs()" << endl;
-	//		throw e;
-	//	}
 }
 
 class TruckSegmentRep : public SegmentRep {
@@ -325,7 +323,7 @@ string StatsRep::attribute(const string& name) {
 
 void StatsRep::attributeIs(const string& name, const string& v) {
 	cerr << "cannot set attribute for Statistics" << endl;
-	throw Fwk::AttributeNotSupportedException("Statistics " + name);
+	//throw Fwk::AttributeNotSupportedException("Statistics " + name);
 }
 
 /* =========== | CONNECTION REP | =======================*/
@@ -396,7 +394,7 @@ string ConnRep::attribute(const string& name) {
 
 void ConnRep::attributeIs(const string& name, const string& v) {
 	cerr << "cannot set attribute for Connection" << endl;
-	throw Fwk::AttributeNotSupportedException("Connection " + name);
+	//throw Fwk::AttributeNotSupportedException("Connection " + name);
 }
 
 /* =========== | FLEET REP | =======================*/
@@ -483,11 +481,11 @@ void FleetRep::attributeIs(const string& name, const string& v) {
 			fleet_->capacityIs(m,atoi(v.c_str()));
 		} else {
 			cerr << "Invalid Fleet attribute: " << property << endl;
-			throw Fwk::AttributeNotSupportedException("Fleet " + name);
+			//throw Fwk::AttributeNotSupportedException("Fleet " + name);
 		}
 	} catch (Fwk::RangeException & e) {
 		cerr << "Error setting attribute " << name << " to " << v << endl;
-		throw e;
+		//throw e;
 	}
 }
 
