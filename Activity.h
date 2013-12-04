@@ -57,19 +57,14 @@ public:
     typedef Fwk::Ptr<Activity::Manager> Ptr;
 
     virtual Fwk::Ptr<Activity> activityNew(const string &name) = 0;
-
     virtual Fwk::Ptr<Activity> activity(const string &name) const = 0;
-
     virtual void activityDel(const string &name) = 0;
-
     virtual void lastActivityIs(Activity::Ptr) = 0;
-
+    
     virtual Time now() const = 0;
     virtual void nowIs(Time) = 0;
+protected:
 
-
-private:
-    /* Up to you */
 };
 
 extern Fwk::Ptr<Activity::Manager> activityManagerInstance();
