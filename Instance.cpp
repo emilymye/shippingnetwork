@@ -1,4 +1,3 @@
-#include "fwk/NamedInterface.h"
 #include <iostream>
 #include <sstream>
 #include <map>
@@ -6,11 +5,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cctype>
+#include "Nominal.h"
 #include "Instance.h"
 #include "Engine.h"
 #include "Entity.h"
-#include "Nominal.h"
-
 
 namespace Shipping {
 using namespace std;
@@ -26,7 +24,7 @@ private:
 	bool connCreated;
 	bool fleetCreated;
 	ShippingNetwork::Ptr network_;
-	ShippingNetworkReactor::Ptr reactor_;
+	ShippingNetworkReactor* reactor_;
 
 	enum InstanceType {
 		None,
@@ -288,13 +286,13 @@ public:
 
 class StatsRep : public Instance {
 public:
-	StatsRep(const string& name, ManagerImpl* manager, ShippingNetworkReactor::Ptr reactor) :
+	StatsRep(const string& name, ManagerImpl* manager, ShippingNetworkReactor* reactor) :
 		Instance(name), manager_(manager), reactor_(reactor) {}
 	string attribute(const string& name);
 	void attributeIs(const string& name, const string& v);
 private:
 	Ptr<ManagerImpl> manager_;
-	ShippingNetworkReactor::Ptr reactor_;
+	ShippingNetworkReactor* reactor_;
 };
 
 string StatsRep::attribute(const string& name) {
@@ -498,7 +496,7 @@ void FleetRep::attributeIs(const string& name, const string& v) {
  * =======================================================================*/
 ManagerImpl::ManagerImpl() : statsCreated(false),connCreated(false),fleetCreated(false) {
 	network_ = ShippingNetwork::ShippingNetworkNew("network");
-	reactor_ = ShippingNetworkReactor::ShippingNetworkReactorIs(network_.ptr());
+	reactor_ = new ShippingNetworkReactor(network_.ptr());
 }
 
 Ptr<Instance> ManagerImpl::instance(const string& name) {

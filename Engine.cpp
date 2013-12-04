@@ -18,32 +18,6 @@ namespace Shipping {
         }
     }
     //----------| NotifieeConst Implementation |------------//
-    ShippingNetwork::NotifieeConst::~NotifieeConst() {
-        if(notifier_&&isNonReferencing()) notifier_->newRef();
-    }
-    void ShippingNetwork::NotifieeConst::notifierIs(const ShippingNetwork::PtrConst& _notifier) {
-        ShippingNetwork::Ptr notifierSave(const_cast<ShippingNetwork *>(notifier_.ptr()));
-        if(_notifier==notifier_) return;
-        notifier_ = _notifier;
-        if(notifierSave) {
-            notifierSave->deleteNotifiee(this);
-        }
-        if(_notifier) {
-            _notifier->newNotifiee(this);
-        }
-        if(isNonReferencing_) {
-            if(notifierSave) notifierSave->newRef();
-            if(notifier_) notifier_->deleteRef();
-        }
-    }
-    void ShippingNetwork::NotifieeConst::isNonReferencingIs(bool _isNonReferencing){
-        if(_isNonReferencing==isNonReferencing_) return;
-        isNonReferencing_ = _isNonReferencing;
-        if(notifier_) {
-            if(_isNonReferencing) notifier_->deleteRef();
-            else notifier_->newRef();
-        }
-    }
 
     // ----------| Attribute Implementation | --------//
     Location::Ptr ShippingNetwork::locationNew( Location::Ptr loc){
@@ -217,11 +191,13 @@ namespace Shipping {
             seg->length().value() / (transSpeed * 1.3) : seg->length().value() / transSpeed;
     }
 
-    /* -------------- || Shipping Network Reactor || -----------------------*/
-    void ShippingNetworkReactor::onSegmentExpediteChange( bool newExpedited )
+    /* ========================= SHIPPING NETWORK REACTOR =========================*/
+
+        void ShippingNetworkReactor::onSegmentExpediteChange( bool newExpedited )
     {
-    	expeditedSegments += ((newExpedited) ? 1 : 0);
+        expeditedSegments += ((newExpedited) ? 1 : 0);
     }
+
     void ShippingNetworkReactor::onLocationNew(Location::Ptr loc) {
         if (!loc) return;
         if (loc->type() == loc->customer())
@@ -235,8 +211,9 @@ namespace Shipping {
         else if (loc->type() == loc->planeTerminal())
             entityCounts[planeTerminal_]++;
     }
+
     void ShippingNetworkReactor::onLocationDel(Location::Ptr loc) {
-    	if (!loc) return;
+        if (!loc) return;
         if (loc->type() == loc->customer())
             entityCounts[customer_]--;
         else if (loc->type() == loc->port())
@@ -250,7 +227,7 @@ namespace Shipping {
     }
 
     void ShippingNetworkReactor::onSegmentNew(Segment::Ptr seg) { 
-    	if (!seg) return;
+        if (!seg) return;
         if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]++;
         }
@@ -263,10 +240,10 @@ namespace Shipping {
         if (seg->expediteSupport()) 
             expeditedSegments++;
 
-        segmentreactors[seg->name()] = SegmentReactor::SegmentReactorIs(seg.ptr(), this);
+        segmentreactors[seg->name()] = new SegmentReactor(seg.ptr(), this);
     }
     void ShippingNetworkReactor::onSegmentDel(Segment::Ptr seg) {
-    	if (!seg) return;
+        if (!seg) return;
         if (seg->mode() == Truck_) {
             entityCounts[truckSegment_]--;
         } else if (seg->mode() == Boat_) {
