@@ -124,7 +124,6 @@ namespace Shipping{
         public:
             typedef Fwk::Ptr<Notifiee> Ptr;
             Notifiee(Segment* s) : Fwk::BaseNotifiee<Segment>(s) {}
-
             virtual void onShipmentRecieved(Shipment*) {}
         };
 
@@ -142,7 +141,7 @@ namespace Shipping{
         Fwk::String name_;
 
         ShippingMode mode_;
-        Segment::Notifiee * notifiee_;
+        Segment::Notifiee::Ptr notifiee_;
         Location * source_;
         Segment* returnSegment_;
 

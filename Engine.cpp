@@ -21,7 +21,8 @@ namespace Shipping {
 
     // ----------| Attribute Implementation | --------//
     Location::Ptr ShippingNetwork::locationNew( Location::Ptr loc){
-        if (locationMap.count(loc->name())) return NULL;
+        if (loc == NULL || locationMap.find(loc->name()) != locationMap.end()) 
+            return NULL;
         locationMap[loc->name()] = loc;
         if (notifiee_) {
             notifiee_->onLocationNew(loc);
@@ -41,19 +42,20 @@ namespace Shipping {
     }
 
     Segment::Ptr ShippingNetwork::segmentNew( Segment::Ptr seg ){
-        if (segmentMap.count(seg->name())) return 0;
+        if (seg == NULL || segmentMap.find(seg->name()) != segmentMap.end()) 
+            return NULL;
         segmentMap[seg->name()] = seg;
         if (notifiee_) 
             notifiee_->onSegmentNew(seg);
         return seg;
     }
     void ShippingNetwork::segmentDel( Fwk::String _name ){
-        if (!segmentMap.count(_name)) return;
+        if (segmentMap.find(_name) == segmentMap.end()) return;
         Segment::Ptr s = segmentMap[_name];
-        if (s->source())
-            s->source()->segmentDel(s);
         if (notifiee_) 
             notifiee_->onSegmentDel(s);
+        if (s->source())
+            s->source()->segmentDel(s);
         segmentMap.erase(_name);
     }
 

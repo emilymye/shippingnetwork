@@ -12,13 +12,13 @@
 namespace Shipping{
     class SegmentReactor : public Segment::Notifiee {
     public:
-        SegmentReactor(Segment* n, Fleet::Ptr f, Fwk::Ptr<Activity::Manager> m) 
+        SegmentReactor(Segment* n, Fleet* f, Fwk::Ptr<Activity::Manager> m) 
             : Segment::Notifiee(n), segment_(n), fleet_(f) {}
         void onShipmentRecieved(Shipment*);
     protected: 
         Segment::Ptr segment_;
         Fwk::Ptr<Activity::Manager> manager_;
-        Fleet::Ptr fleet_;
+        Fleet* fleet_;
     };
 
     class LocationReactor : public Location::Notifiee{
