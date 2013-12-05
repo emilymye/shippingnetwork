@@ -1,6 +1,6 @@
 CXXFLAGS = -Wall -g
 
-OBJECTS = ActivityImpl.o Instance.o Engine.o Exception.o
+OBJECTS = ActivityImpl.o Instance.o Engine.o Exception.o Reactors.o
 
 default: verification experiment
 verification: verification.o $(OBJECTS)
@@ -12,7 +12,7 @@ ActivityImpl.o: ActivityImpl.h Activity.h
 Instance.o: Instance.cpp Instance.h Engine.h Entity.h ActivityImpl.h
 Engine.o: Engine.cpp Engine.h Instance.h Entity.h
 Exception.o: Exception.cpp Exception.h
-
+Reactors.o: ActivityImpl.h Reactors.h
 
 verification.o: verification.cpp Instance.h ActivityImpl.h
 experiment.o: experiment.cpp Instance.h ActivityImpl.h

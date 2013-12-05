@@ -11,11 +11,12 @@
 #include "ActivityImpl.h"
 #include "Engine.h"
 #include "Entity.h"
+#include "Reactors.h"
+
 //#include "EntityReactor.h"
 
+using namespace std;
 namespace Shipping {
-    using namespace std;
-
     class ManagerImpl : public Instance::Manager {
     public:
         ManagerImpl();
@@ -28,7 +29,7 @@ namespace Shipping {
         bool fleetCreated;
         ShippingNetwork::Ptr network_;
         ShippingNetworkReactor* reactor_;
-        Ptr<Activity::Manager> manager_;
+        Ptr<Activity::Manager> activityManager_;
 
         enum InstanceType {
             None,
@@ -134,10 +135,11 @@ namespace Shipping {
     //LOCATION INSTANCES SUBCLASSES
     class CustomerRep : public LocationRep {
     public:
-        CustomerRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) :
+        CustomerRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network, Fwk::Ptr<Activity::Manager> am) :
             LocationRep(name, manager, network) {
                 loc_ = CustomerLocation::CustomerLocationNew(name);
                 network_->locationNew(loc_);
+                loc_->lastNotifieeIs( new CustomerReactor( loc_.ptr(), am ) );
         }
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
@@ -201,6 +203,7 @@ namespace Shipping {
             LocationRep(name, manager, network) {
                 loc_ = PortLocation::PortLocationNew(name);
                 network_->locationNew(loc_);
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
         }
     };
     class TruckTerminalRep : public LocationRep {
@@ -209,6 +212,7 @@ namespace Shipping {
             LocationRep(name, manager, network) {
                 loc_ = TruckTerminal::TruckTerminalNew(name);
                 network_->locationNew(loc_);
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
         }
     };
     class BoatTerminalRep : public LocationRep {
@@ -217,6 +221,7 @@ namespace Shipping {
             LocationRep(name, manager, network) {
                 loc_ = BoatTerminal::BoatTerminalNew(name);
                 network_->locationNew(loc_);
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
         }
     };
     class PlaneTerminalRep : public LocationRep {
@@ -225,6 +230,7 @@ namespace Shipping {
             LocationRep(name, manager, network) {
                 loc_ = PlaneTerminal::PlaneTerminalNew(name);
                 network_->locationNew(loc_);
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
         }
     };
 
@@ -341,28 +347,30 @@ namespace Shipping {
 
     class TruckSegmentRep : public SegmentRep {
     public:
-        TruckSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr) : 
-            SegmentRep(name, manager, sn, snr) {
+        TruckSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr, Fwk::Ptr<Activity::Manager> am) : SegmentRep(name, manager, sn, snr) {
                 seg_ = TruckSegment::TruckSegmentNew(name);
                 sn_->segmentNew(seg_);
+                seg_->lastNotifieeIs( new SegmentReactor(seg_.ptr(),sn->fleet(),am) ); 
         }
     };
 
     class BoatSegmentRep : public SegmentRep {
     public:
-        BoatSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr) : 
+        BoatSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr, Fwk::Ptr<Activity::Manager> am) : 
             SegmentRep(name, manager, sn, snr) {
                 seg_ = BoatSegment::BoatSegmentNew(name);
                 sn_->segmentNew(seg_);
+                seg_->lastNotifieeIs( new SegmentReactor(seg_.ptr(),sn->fleet(),am) ); 
         }
     };
 
     class PlaneSegmentRep : public SegmentRep {
     public:
-        PlaneSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr) : 
+        PlaneSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr, Fwk::Ptr<Activity::Manager> am) : 
             SegmentRep(name, manager, sn, snr) {
                 seg_ = PlaneSegment::PlaneSegmentNew(name);
                 sn_->segmentNew(seg_);
+                seg_->lastNotifieeIs( new SegmentReactor(seg_.ptr(),sn->fleet(),am) ); 
         }
     };
 
@@ -573,6 +581,7 @@ namespace Shipping {
         network_ = ShippingNetwork::ShippingNetworkNew("network");
         reactor_ = new ShippingNetworkReactor(network_.ptr());
         network_->lastNotifieeIs(reactor_);
+        activityManager_ = activityManagerInstance();
 
     }
 
@@ -593,7 +602,7 @@ namespace Shipping {
         }
 
         if (type == customerStr) {
-            Ptr<CustomerRep> t = new CustomerRep(name, this, network_);
+            Ptr<CustomerRep> t = new CustomerRep(name, this, network_,activityManager_);
             instance_[name] = InstanceStore(t, Location);
             return t;
         }
@@ -620,17 +629,17 @@ namespace Shipping {
             return t;
         }
         else if (type == truckSegmentStr) {
-            Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, network_, reactor_);
+            Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, network_, reactor_,activityManager_);
             instance_[name] = InstanceStore(t,Segment);
             return t;
         }
         else if (type == boatSegmentStr) {
-            Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, network_,reactor_);
+            Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, network_,reactor_,activityManager_);
             instance_[name] = InstanceStore(t,Segment);
             return t;
         }
         else if (type == planeSegmentStr) {
-            Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, network_,reactor_);
+            Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, network_,reactor_,activityManager_);
             instance_[name] = InstanceStore(t,Segment);
             return t;
         }
