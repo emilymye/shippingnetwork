@@ -3,6 +3,14 @@
 //#include "unistd.h"
 #include "ActivityImpl.h"
 
+Fwk::Ptr<RealTimeManager> realTimeManagerInstance() {
+    return RealTimeManager::realTimeManagerInstance();
+}
+
+Fwk::Ptr<Activity::Manager> activityManagerInstance() {
+    return ActivityImpl::ManagerImpl::activityManagerInstance();
+}
+
 namespace ActivityImpl {
 
     // == | ManagerImpl |========================================
@@ -59,20 +67,20 @@ namespace ActivityImpl {
 		now_ = t;
 	}
 
-    // == | RealTimeManagerImpl |========================================
-	Fwk::Ptr<RealTimeManager> RealTimeManager::managerInstance_ = NULL;
-
-    //Gets the singleton instance of RealTimeManagerImpl
-	Fwk::Ptr<RealTimeManager> RealTimeManager::realTimeManagerInstance() {
-		if (managerInstance_ == NULL) {
-			managerInstance_ = new RealTimeManager();
-		}
-		return managerInstance_;
-	}
-
-	void RealTimeManager::realTimePassedIs(Time t) {
-        //usleep(t * 1000000);
-		virtualManager_->nowIs(now().value + t.value());
-	}
-
 } //end namespace ActivityImpl
+
+// == | RealTimeManagerImpl |========================================
+Fwk::Ptr<RealTimeManager> RealTimeManager::managerInstance_ = NULL;
+
+//Gets the singleton instance of RealTimeManagerImpl
+Fwk::Ptr<RealTimeManager> RealTimeManager::realTimeManagerInstance() {
+	if (managerInstance_ == NULL) {
+		managerInstance_ = new RealTimeManager();
+	}
+	return managerInstance_;
+}
+
+void RealTimeManager::realTimePassedIs(Time t) {
+    //usleep(t * 1000000);
+	virtualManager_->nowIs(virtualManager_->now().value() + t.value());
+}

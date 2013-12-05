@@ -8,8 +8,10 @@
 #include <cctype>
 #include "Nominal.h"
 #include "Instance.h"
+#include "ActivityImpl.h"
 #include "Engine.h"
 #include "Entity.h"
+//#include "EntityReactor.h"
 
 namespace Shipping {
 using namespace std;
@@ -26,14 +28,16 @@ private:
 	bool fleetCreated;
 	ShippingNetwork::Ptr network_;
 	ShippingNetworkReactor* reactor_;
-
+    Ptr<Activity::Manager> manager_;
+    
 	enum InstanceType {
 		None,
 		Location,
 		Segment,
 		Fleet,
 		Stats,
-		Connection
+		Connection,
+
 	};
 	struct InstanceStore{
 		Ptr<Instance> instance;
@@ -192,13 +196,15 @@ public:
 // SEGMENT INSTANCE ==========================
 class SegmentRep : public Instance {
 public:
-	SegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) : Instance(name), manager_(manager), sn_(sn){}
+    SegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr) 
+        : Instance(name), manager_(manager), sn_(sn), snreactor_(snr){}
 	string attribute(const string& name);
 	void attributeIs(const string& name, const string& v);
 protected:
 	Segment::Ptr seg_;
 	Ptr<ManagerImpl> manager_;
 	ShippingNetwork::Ptr sn_;
+	ShippingNetworkReactor::Ptr snreactor_;
 };
 
 string SegmentRep::attribute(const string& name) {
@@ -269,23 +275,30 @@ void SegmentRep::attributeIs(const string& name, const string& v){
 		} else if (!name.compare(difficultyStr)) {
 			seg_->difficultyIs( atof(v.c_str()));
 		} else if (!name.compare(expSupportStr)){
-			if (!v.compare("yes"))
-				seg_->expediteSupportIs(true);
-			else if (!v.compare("no"))
+			if (!v.compare("yes")){
+                if (seg_->expediteSupport()) return;
+                seg_->expediteSupportIs(true);
+                if (sn_->notifiee() != NULL) 
+                    sn_->notifiee()->onSegmentExpediteChange(true);
+            } else if (!v.compare("no")){
+                if (!seg_->expediteSupport()) return;
 				seg_->expediteSupportIs(false);
+                if (sn_->notifiee()) 
+                    sn_->notifiee()->onSegmentExpediteChange(false);
+            }
 		} else {
 			cerr << "Invalid segment attribute: " << name << endl;
 			throw Fwk::AttributeNotSupportedException("Segment " + name);
 		}
-	} catch (Fwk::Exception & e) {
+	} catch (...) {
 		cerr << "invalid Segment attributeIs()" << endl;
 	}
 }
 
 class TruckSegmentRep : public SegmentRep {
 public:
-	TruckSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
-		SegmentRep(name, manager, sn) {
+	TruckSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr) : 
+		SegmentRep(name, manager, sn, snr) {
 		seg_ = TruckSegment::TruckSegmentNew(name);
 		sn_->segmentNew(seg_);
 	}
@@ -293,8 +306,8 @@ public:
 
 class BoatSegmentRep : public SegmentRep {
 public:
-	BoatSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
-		SegmentRep(name, manager, sn) {
+	BoatSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr) : 
+		SegmentRep(name, manager, sn, snr) {
 		seg_ = BoatSegment::BoatSegmentNew(name);
 		sn_->segmentNew(seg_);
 	}
@@ -302,8 +315,8 @@ public:
 
 class PlaneSegmentRep : public SegmentRep {
 public:
-	PlaneSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn) :
-		SegmentRep(name, manager, sn) {
+	PlaneSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr) : 
+		SegmentRep(name, manager, sn, snr) {
 		seg_ = PlaneSegment::PlaneSegmentNew(name);
 		sn_->segmentNew(seg_);
 	}
@@ -411,7 +424,7 @@ string ConnRep::attribute(const string& name) {
 		} else {
 			cerr << "Invalid Connection attribute" << endl;
 		}
-	} catch (Fwk::Exception & e) {
+	} catch (...) {
 		cerr << "Error finding connection: " << name << endl;
 		return "";
 	}
@@ -511,7 +524,7 @@ void FleetRep::attributeIs(const string& name, const string& v) {
 			//throw Fwk::AttributeNotSupportedException("Fleet " + name);
 		}
 	} catch (Fwk::RangeException & e) {
-		cerr << "Error setting attribute " << name << " to " << v << endl;
+        cerr << "Fleet Error: " << e.what() << endl;
 		//throw e;
 	}
 }
@@ -522,6 +535,8 @@ void FleetRep::attributeIs(const string& name, const string& v) {
 ManagerImpl::ManagerImpl() : statsCreated(false),connCreated(false),fleetCreated(false) {
 	network_ = ShippingNetwork::ShippingNetworkNew("network");
 	reactor_ = new ShippingNetworkReactor(network_.ptr());
+    network_->lastNotifieeIs(reactor_);
+	
 }
 
 Ptr<Instance> ManagerImpl::instance(const string& name) {
@@ -568,17 +583,17 @@ Ptr<Instance> ManagerImpl::instanceNew (const string& name, const string& type) 
 		return t;
 	}
 	else if (type == truckSegmentStr) {
-		Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, network_);
+		Ptr<TruckSegmentRep> t = new TruckSegmentRep(name, this, network_, reactor_);
 		instance_[name] = InstanceStore(t,Segment);
 		return t;
 	}
 	else if (type == boatSegmentStr) {
-		Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, network_);
+		Ptr<BoatSegmentRep> t = new BoatSegmentRep(name, this, network_,reactor_);
 		instance_[name] = InstanceStore(t,Segment);
 		return t;
 	}
 	else if (type == planeSegmentStr) {
-		Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, network_);
+		Ptr<PlaneSegmentRep> t = new PlaneSegmentRep(name, this, network_,reactor_);
 		instance_[name] = InstanceStore(t,Segment);
 		return t;
 	}

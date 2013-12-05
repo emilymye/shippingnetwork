@@ -4,8 +4,12 @@
 #include <map>
 #include <string>
 #include <queue>
-
+#include <string>
+#include "PtrInterface.h"
+#include "Ptr.h"
 #include "Activity.h"
+
+Fwk::Ptr<Activity::Manager> activityManagerInstance();
 
 namespace ActivityImpl {
     class ActivityComp : public binary_function<Activity::Ptr, Activity::Ptr, bool> {
@@ -74,7 +78,7 @@ namespace ActivityImpl {
     };
 }
 
-class RealTimeManager {
+class RealTimeManager : public Fwk::PtrInterface<RealTimeManager> {
 public:
     typedef Fwk::Ptr<RealTimeManager> Ptr;
     virtual Activity::Ptr activityNew(const string& name) { 
@@ -93,20 +97,12 @@ public:
     virtual void realTimePassedIs(Time t);
 protected:
     RealTimeManager() { virtualManager_ = activityManagerInstance(); }
-    virtual Time now() const { return virtualManager_->now(); }
-    virtual void nowIs(Time time) { virtualManager_->nowIs(time); }
-    ActivityImpl::ManagerImpl::Ptr virtualManager_;
+    Fwk::Ptr<Activity::Manager> virtualManager_;
     static Fwk::Ptr<RealTimeManager> managerInstance_;
 };
 
 
-Fwk::Ptr<RealTimeManager> realTimeManagerInstance() {
-    return RealTimeManager::realTimeManagerInstance();
-}
-
-Fwk::Ptr<Activity::Manager> activityManagerInstance() {
-    return ActivityImpl::ManagerImpl::activityManagerInstance();
-}
+extern Fwk::Ptr<RealTimeManager> realTimeManagerInstance();
 
 #endif /* __ACTIVITY_IMPL_H__ */
 

@@ -249,8 +249,20 @@ namespace Shipping {
             expeditedSegments--;
     }
 
+    void ShippingNetworkReactor::onSegmentExpediteChange(bool support) {
+        if (support) 
+            expeditedSegments++;
+        else 
+            expeditedSegments --;
+    }
+
     unsigned int ShippingNetworkReactor::shippingEntities(StatsEntityType type) {
         if (type >= SHIPPING_ENTITY_COUNT) return 0;
         return entityCounts[type];
+    }
+
+    Percent ShippingNetworkReactor::expeditedPercent() {
+        unsigned int segmentCount = entityCounts[truckSegment_] + entityCounts[boatSegment_] + entityCounts[planeSegment_];
+        return (100.f * (float) expeditedSegments / (float) segmentCount);
     }
 }

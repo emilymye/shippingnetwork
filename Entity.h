@@ -63,51 +63,15 @@ namespace Shipping{
         MODE_COUNT //DO NOT MOVE 
     };
 
-    class Fleet : public Fwk::PtrInterface<Fleet> {
-    public:
-        static const ShippingMode truck() {return Truck_;}
-        static const ShippingMode boat() {return Boat_;}
-        static const ShippingMode plane() {return Plane_;}
-
-        ~Fleet() {}
-        Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
-        void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
-
-        Capacity capacity( ShippingMode m ) const{ return fleetmode[m].capacity_; }
-        void capacityIs (ShippingMode m, Capacity _capacity) { fleetmode[m].capacity_ = _capacity; }
-
-        Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
-        void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
-
-        virtual string name() const { return name_; }
-        typedef Fwk::Ptr<Fleet const> PtrConst;
-        typedef Fwk::Ptr<Fleet> Ptr;
-        static Fleet::Ptr FleetNew(Fwk::String _name) {
-            Ptr m = new Fleet( _name );
-            return m;
-        }
-    protected:
-        Fleet (const Fleet&);
-        explicit Fleet( Fwk::String name): name_(name){ }
-
-        struct FleetMode {
-            Speed speed_;
-            Capacity capacity_;
-            Cost cost_;
-            FleetMode():speed_(50.f),capacity_(10),cost_(1.f) {}
-        };
-        FleetMode fleetmode[MODE_COUNT];
-        Fwk::String name_;
-    };
-
     class Location;
 
     struct Shipment {
-        Capacity packages_;
-        Location* source_;
-        Location* destination_;
-        Shipment( Location* src, Location* dest, Capacity packages)
-            : source_(src), destination_(dest), packages_(packages) {}
+        Location* dest;
+        Capacity packages;
+        Time start;
+        Cost total;
+        Shipment( Location* _dest, Capacity _packages, Time _start )
+            : dest(_dest), packages(_packages), start(_start), total(0.0) {}
     };
 
     class Segment : public Fwk::PtrInterface<Segment> {
@@ -398,5 +362,43 @@ namespace Shipping{
         PlaneSegment (const TruckSegment& );
         PlaneSegment( Fwk::String _name) : Segment(_name, Shipping::Plane_) {}
     };
+
+    class Fleet : public Fwk::PtrInterface<Fleet> {
+    public:
+        static const ShippingMode truck() {return Truck_;}
+        static const ShippingMode boat() {return Boat_;}
+        static const ShippingMode plane() {return Plane_;}
+
+        ~Fleet() {}
+        Speed speed( ShippingMode m ) const { return fleetmode[m].speed_; }
+        void speedIs (ShippingMode m, Speed _speed) { fleetmode[m].speed_ = _speed; }
+
+        Capacity capacity( ShippingMode m ) const{ return fleetmode[m].capacity_; }
+        void capacityIs (ShippingMode m, Capacity _capacity) { fleetmode[m].capacity_ = _capacity; }
+
+        Cost cost( ShippingMode m ) const { return fleetmode[m].cost_; }
+        void costIs (ShippingMode m, Cost _cost) { fleetmode[m].cost_ = _cost; }
+
+        virtual string name() const { return name_; }
+        typedef Fwk::Ptr<Fleet const> PtrConst;
+        typedef Fwk::Ptr<Fleet> Ptr;
+        static Fleet::Ptr FleetNew(Fwk::String _name) {
+            Ptr m = new Fleet( _name );
+            return m;
+        }
+    protected:
+        Fleet (const Fleet&);
+        explicit Fleet( Fwk::String name): name_(name){ }
+
+        struct FleetMode {
+            Speed speed_;
+            Capacity capacity_;
+            Cost cost_;
+            FleetMode():speed_(50.f),capacity_(10),cost_(1.f) {}
+        };
+        FleetMode fleetmode[MODE_COUNT];
+        Fwk::String name_;
+    };
+
 } /* end namespace */
 #endif

@@ -93,14 +93,14 @@ namespace Shipping {
             me->notifiee_ = n;
         }
         //=========== END NOTIFIEE ================
-
     protected:
         ShippingNetwork() : fleet_(NULL), notifiee_(NULL) { } 
     private:
         ShippingNetwork::Notifiee * notifiee_;
-
         map<string,Location::Ptr> locationMap;
         map<string,Segment::Ptr> segmentMap;
+
+        Activity::Manager::Ptr manager;
         Fleet::Ptr fleet_;
 
         //Private methods
@@ -139,6 +139,7 @@ namespace Shipping {
         void onSegmentNew(Segment::Ptr seg);
         void onLocationDel(Location::Ptr loc);
         void onSegmentDel(Segment::Ptr seg);
+        void onSegmentExpediteChange(bool support);
 
         enum StatsEntityType{
             customer_ = 0,
@@ -160,9 +161,8 @@ namespace Shipping {
         static inline StatsEntityType boatSegment() { return boatSegment_; };
         static inline StatsEntityType planeSegment() { return planeSegment_; };
 
+        Percent expeditedPercent();
         unsigned int shippingEntities( StatsEntityType type );
-        Percent expeditedPercent() { return 0.f; } //For ASSN3 no expedited segments
-
     private:
         int expeditedSegments;
         unsigned int entityCounts [SHIPPING_ENTITY_COUNT];
