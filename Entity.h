@@ -103,7 +103,7 @@ namespace Shipping{
         Capacity receivedShipments() const { return recievedShip_; }
         Capacity refusedShipments() const { return refusedShip_; }
         Capacity shipmentCapacity() const { return shipmentCap_; }
-        Capacity shipmentCapacity( Capacity & c) { shipmentCap_ = c; }
+        void shipmentCapacityIs( Capacity c) { shipmentCap_ = c; }
 
         virtual string name() const { return name_; }
 
@@ -243,8 +243,8 @@ namespace Shipping{
             rate_ = rate;
         }
 
-        Capacity size() const { return size_; }
-        void sizeIs( Capacity rate ) {
+        Capacity shipmentSize() const { return size_; }
+        void shipmentSizeIs( Capacity rate ) {
             if (notifiee_) notifiee_->onSize( rate );
             rate_ = rate;
         }

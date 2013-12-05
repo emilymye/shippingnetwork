@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     loc.push_back( manager->instanceNew("tt1", "Truck terminal") );
     loc.push_back( manager->instanceNew("tt2", "Truck terminal") );
     loc.push_back( manager->instanceNew("customer3", "Customer") );
-
+    loc[0]->attributeIs("transfer rate", "2");
 	// Segments
     seg.push_back( manager->instanceNew("ps1", "Plane segment") );
     seg.push_back( manager->instanceNew("ps2", "Plane segment") );
@@ -54,7 +54,6 @@ int main(int argc, char *argv[]) {
 	seg[4]->attributeIs("capacity", "1");
 	seg[6]->attributeIs("capacity", "1");
 
-	
 	Ptr<Instance> conn = manager->instanceNew("myConn", "Conn");
 	
     Activity::Manager::Ptr activityManager = activityManagerInstance();
