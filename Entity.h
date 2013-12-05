@@ -111,10 +111,10 @@ namespace Shipping{
 
         bool shipmentNew( Shipment * s){
             if (shipmentQ_.size() >= shipmentCap_.value()){
-                refusedShip_++;
+                ++refusedShip_;
                 return false;
             }
-            recievedShip_++;
+            ++recievedShip_;
             if (notifiee())
                 notifiee()->onShipmentRecieved(s);
         }
@@ -280,7 +280,7 @@ namespace Shipping{
         
         void shipmentNew(Shipment * s){
             if (!s->dest->name().compare(name_)) {
-                recieved_++;
+                ++recieved_;
                 totalTime_ = totalTime_.value() + (s->totalTime).value();
                 totalCost_ = totalCost_.value() + (s->totalCost).value();
             } else {

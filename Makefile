@@ -9,10 +9,10 @@ experiment: experiment.o $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 ActivityImpl.o: ActivityImpl.h Activity.h
-Instance.o: Instance.cpp Instance.h Engine.h Entity.h ActivityImpl.h
+Instance.o: Instance.cpp Instance.h ActivityImpl.h
 Engine.o: Engine.cpp Engine.h Instance.h Entity.h
 Exception.o: Exception.cpp Exception.h
-Reactors.o: ActivityImpl.h Reactors.h
+Reactors.o: ActivityImpl.h Reactors.h Reactors.cpp
 
 verification.o: verification.cpp Instance.h ActivityImpl.h
 experiment.o: experiment.cpp Instance.h ActivityImpl.h
