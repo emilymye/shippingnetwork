@@ -73,8 +73,8 @@ namespace Shipping{
         Capacity packages;
         Time totalTime;
         Cost totalCost;
-        Shipment( Location* src, Location* _dest, Capacity _packages)
-            : dest(_dest), packages(_packages), totalTime(0.0), totalCost(0.0) {}
+        Shipment( Location* _src, Location* _dest, Capacity _packages)
+            : src(_src), dest(_dest), packages(_packages), totalTime(0.0), totalCost(0.0) {}
     };
 
     class Segment : public Fwk::PtrInterface<Segment> {
@@ -243,7 +243,7 @@ namespace Shipping{
             typedef Fwk::Ptr<Notifiee> Ptr;
             Notifiee(CustomerLocation* l) : Location::Notifiee(l) {}
             virtual void onTransferRate() {}
-            virtual void onSize() {}
+            virtual void onShipmentSize() {}
             virtual void onDestination() {}
         };
 
@@ -254,29 +254,34 @@ namespace Shipping{
 
         Capacity transferRate() const { return rate_; }
         void transferRateIs( Capacity rate ) {
-            if (notifiee_) notifiee_->onTransferRate();
+            if (rate == rate_) return;
             rate_ = rate;
+            if (notifiee_) notifiee_->onTransferRate();
         }
 
         Capacity shipmentSize() const { return size_; }
         void shipmentSizeIs( Capacity size ) {
             if (size_ == size) return;
-            if (notifiee_) notifiee_->onSize();
             size_ = size;
+            if (notifiee_) notifiee_->onShipmentSize();
         }
 
         Location* destination() const { return dest_; }
         void destinationIs( Location * dest ) {
-            if (dest == NULL && dest_ == NULL) return;
-            if (dest->name().compare(dest_->name()) == 0) return;
-            if (notifiee_) notifiee_->onDestination();
+            if (dest_ && dest && dest->name().compare(dest_->name()) == 0)
+                return;
+            else if (dest_ == dest) return;
+            
+            dest_ = dest;
+            if (notifiee_) 
+                notifiee_->onDestination();
             dest_ = dest;
         }
 
         Capacity recieved() const { return recieved_; }
         Time latency() const { return totalTime_.value()/recieved_.value(); }
         Cost totalCost() const { return totalCost_; }
-        
+
         void shipmentNew(Shipment * s){
             if (!s->dest->name().compare(name_)) {
                 ++recieved_;

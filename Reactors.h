@@ -36,7 +36,7 @@ namespace Shipping{
             : CustomerLocation::Notifiee(n) , customer_(n), manager_(m) {}
         void onDestination() { testCanInject(); }
         void onTransferRate() { testCanInject(); }
-        void onSize() { testCanInject(); }
+        void onShipmentSize() { testCanInject(); }
         void onShipmentRecieved(Shipment * shipment);
     protected:
         void testCanInject();

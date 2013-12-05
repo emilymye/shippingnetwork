@@ -23,21 +23,19 @@ namespace Shipping {
         Location* nextLoc = segment_->returnSegment()->source();
         forwardAct->lastNotifieeIs( 
             new ForwardActivityReactor(manager_,forwardAct.ptr(),travelTime,nextLoc,shipment));
+        forwardAct->statusIs(Activity::nextTimeScheduled);
     }
 
     void LocationReactor::onShipmentRecieved(Shipment* shipment)
     {
         cout << "on Shipment" << endl;
-        //ROUTING GOES HERE
-        // Calls segment->shipmentNew()
+        
     }
 
     void CustomerReactor::onShipmentRecieved(Shipment* shipment)
     {
         if (!shipment->src->name().compare(customer_->name())){
-            //ROUTING GOES HERE
-            // Calls segment->shipmentNew()
-        } else if (!shipment->src->name().compare(customer_->name())) {
+            cout << "on Shipment Customer" << endl;
             
         }
     }
@@ -53,6 +51,7 @@ namespace Shipping {
                 double rate = 24.0/(customer_->transferRate()).value();
                 injectAct->lastNotifieeIs(
                     new InjectActivityReactor(manager_,injectAct.ptr(),customer_,rate));
+                injectAct->statusIs(Activity::nextTimeScheduled);
         }
     }
 
@@ -62,7 +61,10 @@ namespace Shipping {
         switch (activity_->status()) {
 
         case Activity::executing:
-            source_->shipmentNew( new Shipment(source_.ptr(),source_->destination(), source_->shipmentSize()) );
+            cout << "InjectActivityReactor EXECUTE" << activity_->nextTime().value() << endl;
+            source_->shipmentNew( 
+                new Shipment(source_.ptr(),source_->destination(), source_->shipmentSize()) 
+                );
             break;
 
         case Activity::free: //auto rescheduled
@@ -84,13 +86,11 @@ namespace Shipping {
         switch (activity_->status()) {
 
         case Activity::executing:
-            forwardLoc_->shipmentNew(shipment_);
+            //forwardLoc_->shipmentNew(shipment_);
         case Activity::free:
-
-            /*
+            cout << "ForwardActivityReactor" << activity_->nextTime().value() << ", " << rate_ << endl;
             activity_->nextTimeIs(Time(activity_->nextTime().value() + rate_));
             activity_->statusIs(Activity::nextTimeScheduled);
-            */
             break;
 
         case Activity::nextTimeScheduled:
