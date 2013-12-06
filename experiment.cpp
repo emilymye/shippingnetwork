@@ -35,7 +35,6 @@ int main() {
         convert_ss << i;
         name1 = name1 + string(convert_ss.str());
         m->instanceNew(name1, "Truck terminal");
-//        cout << "name1: " << name1 << endl;
         inst = m->instanceNew("seg_t0_"+name1, "Truck segment");
         inst->attributeIs("source", "t0");
         inst = m->instanceNew("seg_"+name1+"_t0", "Truck segment");
@@ -52,8 +51,7 @@ int main() {
             inst->attributeIs("source", name1);
             inst = m->instanceNew("seg_"+name2+"_"+name1, "Truck segment");
             inst->attributeIs("source", name2);
-//            cout << "setting return segment to: " << name1 << endl;
-            inst->attributeIs("return segment", name1);
+            inst->attributeIs("return segment", "seg_"+name1+"_"+name2);
         }
     }
     return 0;
