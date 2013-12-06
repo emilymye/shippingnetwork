@@ -43,7 +43,8 @@ namespace Shipping {
 
         Shipment* s = q.front();
         q.pop();
-        if (!seg->shipmentNew(s)) q.push(s);
+        if (!seg->shipmentNew(s)) 
+            q.push(s);
     }
 
     void LocationReactor::onShipmentRecieved(Shipment* s){
@@ -71,7 +72,6 @@ namespace Shipping {
             ++recieved_;
             totalCost_ = totalCost_.value() + (s->totalCost).value();
             totalTime_ = totalTime_.value() + s->totalTime.value();
-            manager_->activityDel(s->act->name());
         } else if (!s->src->name().compare(customer_->name())){
             if (!routed_){
                 findRoutes();

@@ -163,15 +163,92 @@ The output I generated was fairly in depth, so I included examples at the end.
 3. EXPERIMENT.CPP
 ==============================================================================
 
-Simulation 1: Normal, Shipment size = 100
+Change simulation at top with "useRandom" flag.
+
+NORMAL SHIPMENT SIZE 
+---------------------------------------------------------------
+I measured 20 steps to final times of 1000 and 20000. 
 
 
+At time 1000 
+DESTINATION:   Recieved Shipments:2499   Average latency: 4.79   
+Bridge:   Recieved 4989 Refused 17486
+CUSTOMERS to TERMINAL 0 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 1 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 2 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 3 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 4 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 5 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 6 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 7 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 8 AVERAGES: Received 2071.6 refused 1009.4
+CUSTOMERS to TERMINAL 9 AVERAGES: Received 2071.6 refused 1009.4
+Terminal to Central Terminal AVERAGES: Received 1997.6 refused 0
 
 
+At time 20000
+DESTINATION:   Recieved Shipments:47499   Average latency: 9474.70   
 
-Simulation 2: Normal, Shipment size = rand(1 ~ 1000)
+Bridge:   Recieved 49989 Refused 17486
+
+CUSTOMERS to TERMINAL 0 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 1 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 2 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 3 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 4 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 5 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 6 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 7 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 8 AVERAGES: Received 2071.6 refused 2509.4
+CUSTOMERS to TERMINAL 9 AVERAGES: Received 2071.6 refused 2509.4
+Terminal to Central Terminal AVERAGES: Received 1997.6 refused 0
 
 
+The rate of average refused segments between Customer and Terminal increased with time as expected, as did latency. I ran the test first with smaller steps, but 
+the rate at which stats grows semmed to be fairly stable, probably due
+to the fact that there is also a steadily increasing number of Shipments
+being injected with a exponential difference from output areas/segments. 
+
+
+RANDOM SHIPMENT SIZE 
+---------------------------------------------------------------
+
+We immediately seem a overwhelming number of refused segments as the average per shipment 
+increases from 100 to ~500; the latency in comparison to 
+the first example is much larger, and but the number of recieved shipments
+at the destination is similar since the first shipments were most likely
+unimpeded. With the later time, we see a more marked drop.
+
+At time 1000:
+DESTINATION:   Recieved Shipments:2411   Average latency: 286.57   
+Bridge:   Recieved 1972 Refused 4695
+CUSTOMERS to TERMINAL 0 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 1 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 2 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 3 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 4 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 5 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 6 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 7 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 8 AVERAGES: Received 566 refused 1946.5
+CUSTOMERS to TERMINAL 9 AVERAGES: Received 566 refused 1946.5
+Terminal to Central Terminal AVERAGES: Received 821.2 refused 64.4
+
+At time 20000:
+
+DESTINATION:   Recieved Shipments:39385   Average latency: 8311.57   
+Bridge:   Recieved 25629 Refused 31285
+CUSTOMERS to TERMINAL 0 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 1 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 2 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 3 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 4 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 5 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 6 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 7 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 8 AVERAGES: Received 1879.7 refused 3888.1
+CUSTOMERS to TERMINAL 9 AVERAGES: Received 1879.7 refused 3888.1
+Terminal to Central Terminal AVERAGES: Received 3476.7 refused 72.5
 
 
 ==============================================================================
@@ -272,7 +349,3 @@ DESTINATION:
 
 OUTPUT ===================================================== HERE!!!
 
-EXPERIMENT.CPP OUTPUT - 
-
-
----

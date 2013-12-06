@@ -132,7 +132,8 @@ namespace Shipping{
 
         void shipmentDel( Shipment * s){
             shipments_.erase(s);
-            if (notifiee_) notifiee_->onShipmentDel();
+            if (notifiee_) 
+                notifiee_->onShipmentDel();
         }
 
         virtual string name() const { return name_; }
