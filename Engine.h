@@ -76,6 +76,7 @@ namespace Shipping {
             return exploration(start, query);
         }
 
+        
         // NOTIFIEE =================================================
         class Notifiee : public Fwk::BaseNotifiee<ShippingNetwork> {
         public:

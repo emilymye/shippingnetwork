@@ -68,19 +68,20 @@ namespace Shipping {
     static const string segmentStr = "segment";                     //LOCATION
     static const unsigned int segmentStrlen = segmentStr.length();
     //Customer only:
-    static const string transferRateStr = "transfer rate";
-    static const string shipmentSizeStr = "shipment size";
-    static const string destinationStr = "destination";
-    static const string shipmentsRecievedStr = "shipments recieved";
-    static const string latencyStr = "latency";
-    static const string totalCostStr = "total cost";
+    static const string transferRateStr = "Transfer Rate";
+    static const string shipmentSizeStr = "Shipment Size";
+    static const string destinationStr = "Destination";
+    static const string shipmentsRecievedStr = "Shipments Received";
+    static const string latencyStr = "Average Latency";
+    static const string totalCostStr = "Total Cost";
 
     static const string sourceStr = "source";                       //SEGMENT
     static const string lengthStr = "length";
     static const string returnSegStr = "return segment";
     static const string difficultyStr = "difficulty";
     static const string expSupportStr = "expedite support";
-    static const string shipmentsRefusedStr = "shipments refused";
+    static const string shipmentsRefusedStr = "Shipments Refused";
+    static const string shipmentCapacityStr = "Capacity"; 
 
     static const string speedStr = "speed";                         //FLEET        
     static const string capacityStr = "capacity"; 
@@ -139,7 +140,7 @@ namespace Shipping {
             LocationRep(name, manager, network) {
                 loc_ = CustomerLocation::CustomerLocationNew(name);
                 network_->locationNew(loc_);
-                loc_->lastNotifieeIs( new CustomerReactor( loc_.ptr(), am ) );
+                loc_->lastNotifieeIs( new CustomerReactor(loc_.ptr(), am, network) );
         }
         string attribute(const string& name);
         void attributeIs(const string& name, const string& v);
@@ -288,7 +289,7 @@ namespace Shipping {
             if (!name.compare(sourceStr)) { //setting source
                 Location* l = sn_->location(v);
                 if (!l && !v.empty()){
-                    throw Fwk::EntityNotFoundException("invalid source for Segment location");
+                    throw Fwk::EntityNotFoundException("invalid source " + v + " for Segment");
                 }
                 if (v.empty()) {
                     if (seg_->source())
@@ -300,15 +301,17 @@ namespace Shipping {
                     seg_->sourceIs(l);
                     l->segmentNew(seg_);
                 } else {
-                    throw Fwk::IllegalNameException("cannot attach segment of this mode to location"); 
+                    throw Fwk::IllegalNameException("cannot attach segment of this mode to location " + v); 
                     return;
                 }
             } else if (!name.compare(returnSegStr)) { //set return segment
+                if (!v.compare(seg_->name()))
+                    throw Fwk::AttributeNotSupportedException("Cannot set return segment to be same segment");
                 Segment::Ptr rSeg = sn_->segment(v);
                 if (!rSeg && !v.empty()) {
                     throw Fwk::EntityNotFoundException("Segment returnSegment: Invalid segment name");
                 }
-
+                
                 if (seg_->returnSegment()) {
                     seg_->returnSegment()->returnSegmentIs(0);
                 }
@@ -335,7 +338,7 @@ namespace Shipping {
                     if (sn_->notifiee()) 
                         sn_->notifiee()->onSegmentExpediteChange(false);
                 }
-            } else if (name == capacityStr) {
+            } else if (name == shipmentCapacityStr) {
                 seg_->shipmentCapacityIs(atoi(v.c_str()));
             } else {
                 throw Fwk::AttributeNotSupportedException("Invalid segment attribute: Segment " + name);
@@ -348,9 +351,9 @@ namespace Shipping {
     class TruckSegmentRep : public SegmentRep {
     public:
         TruckSegmentRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr sn, ShippingNetworkReactor::Ptr snr, Fwk::Ptr<Activity::Manager> am) : SegmentRep(name, manager, sn, snr) {
-                seg_ = TruckSegment::TruckSegmentNew(name);
-                sn_->segmentNew(seg_);
-                seg_->lastNotifieeIs( new SegmentReactor(seg_.ptr(),sn->fleet(),am) ); 
+            seg_ = TruckSegment::TruckSegmentNew(name);
+            sn_->segmentNew(seg_);
+            seg_->lastNotifieeIs( new SegmentReactor(seg_.ptr(),sn->fleet(),am) ); 
         }
     };
 
@@ -485,7 +488,7 @@ namespace Shipping {
     }
 
     void ConnRep::attributeIs(const string& name, const string& v) {
-        throw Fwk::AttributeNotSupportedException("Connection attributes are read-only");
+        throw Fwk::AttributeNotSupportedException("Invalid Connection attribute " + name);
     }
 
     /* =========== | FLEET REP | =======================*/
@@ -518,7 +521,7 @@ namespace Shipping {
         } else if (!mode.compare("Plane")){
             m = Fleet::plane();
         } else {
-            cerr << "invalid mode - Fleet attribute" << endl;
+            cerr << "invalid mode - Fleet attribute" << mode << endl;
             return "";
         }
 
@@ -558,7 +561,7 @@ namespace Shipping {
         } else if (!mode.compare("Plane")){
             m = Fleet::plane();
         } else {
-            throw Fwk::AttributeNotSupportedException("invalid Fleet mode: " + name);
+            throw Fwk::AttributeNotSupportedException("invalid Fleet mode: " + mode);
         }
 
         try{
@@ -569,7 +572,7 @@ namespace Shipping {
             } else if (!property.compare(capacityStr)){
                 fleet_->capacityIs(m,atoi(v.c_str()));
             } else {
-                throw Fwk::AttributeNotSupportedException("invalid Fleet property: " + name);
+                throw Fwk::AttributeNotSupportedException("invalid Fleet property: " + property);
             }
         } catch (Fwk::RangeException & e) {
             throw Fwk::RangeException("Fleet attribute value out of range: " + name + v);
@@ -605,15 +608,11 @@ namespace Shipping {
             Ptr<CustomerRep> t = new CustomerRep(name, this, network_,activityManager_);
             instance_[name] = InstanceStore(t, Location);
             return t;
-        }
-
-        if (type == portStr) {
+        } else if (type == portStr) {
             Ptr<PortRep> t = new PortRep(name, this, network_);
             instance_[name] = InstanceStore(t,Location);
             return t;
-        }
-
-        else if (type == truckTerminalStr) {
+        } else if (type == truckTerminalStr) {
             Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this, network_);
             instance_[name] = InstanceStore(t,Location);
             return t;
@@ -643,7 +642,13 @@ namespace Shipping {
             instance_[name] = InstanceStore(t,Segment);
             return t;
         }
-        else if (type == statsStr) {
+        else if (type == fleetStr) {
+            if (fleetCreated) return NULL;
+            Ptr<FleetRep> t = new FleetRep(name, this, network_->fleetNew(name));
+            fleetCreated = true;
+            instance_[name] = InstanceStore(t,Fleet);
+            return t;
+        } else if (type == statsStr) {
             if (statsCreated) return NULL;
             Ptr<StatsRep> t = new StatsRep(name, this, reactor_);
             statsCreated = true;
@@ -656,13 +661,8 @@ namespace Shipping {
             connCreated = true;
             instance_[name] = InstanceStore(t,Connection);
             return t;
-        }
-        else if (type == fleetStr) {
-            if (fleetCreated) return NULL;
-            Ptr<FleetRep> t = new FleetRep(name, this, network_->fleetNew(name));
-            fleetCreated = true;
-            instance_[name] = InstanceStore(t,Fleet);
-            return t;
+
+            return NULL;
         }
         return NULL;
     }

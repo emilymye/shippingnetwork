@@ -2,6 +2,8 @@
 #define ENTITY_H
 #include <vector>
 #include <queue>
+#include <set>
+#include <map>
 
 #include "Exception.h"
 #include "String.h"
@@ -66,6 +68,21 @@ namespace Shipping{
     };
 
     class Location;
+    class Segment;
+
+    struct RouteNode {
+        Segment* segment;
+        RouteNode* next;
+        RouteNode(Segment* s) : segment(s), next(NULL) {}
+    };
+
+    struct Route {
+        vector<RouteNode> nodes;
+        set<Segment*> segments;
+        set<Location *> locations;
+        Time totalTime;
+        Route () : totalTime(0) {}
+    };
 
     struct Shipment {
         Location* src;
@@ -73,8 +90,10 @@ namespace Shipping{
         Capacity packages;
         Time totalTime;
         Cost totalCost;
-        Shipment( Location* _src, Location* _dest, Capacity _packages)
-            : src(_src), dest(_dest), packages(_packages), totalTime(0.0), totalCost(0.0) {}
+        RouteNode* currRouteNode;
+        Shipment(Location* _src, Location* _dest, Capacity _packages) : 
+            src(_src), dest(_dest), packages(_packages),
+            totalTime(0.0), totalCost(0.0), currRouteNode(NULL) {}
     };
 
     class Segment : public Fwk::PtrInterface<Segment> {
@@ -110,13 +129,19 @@ namespace Shipping{
         void shipmentCapacityIs( Capacity c) { shipmentCap_ = c; }
 
         bool shipmentNew( Shipment * s){
-            if (shipmentQ_.size() >= shipmentCap_.value()){
+            if (shipments_.size() >= shipmentCap_.value()){
                 ++refusedShip_;
                 return false;
             }
             ++recievedShip_;
             if (notifiee())
-                notifiee()->onShipmentRecieved(s);
+                notifiee()->onShipmentNew(s);
+        }
+
+        
+        void shipmentDel( Shipment * s){
+            shipments_.erase(s);
+            if (notifiee_) notifiee_->onShipmentDel();
         }
         virtual string name() const { return name_; }
 
@@ -124,7 +149,8 @@ namespace Shipping{
         public:
             typedef Fwk::Ptr<Notifiee> Ptr;
             Notifiee(Segment* s) : Fwk::BaseNotifiee<Segment>(s) {}
-            virtual void onShipmentRecieved(Shipment*) {}
+            virtual void onShipmentNew(Shipment*) {}
+            virtual void onShipmentDel() {}
         };
 
         virtual Segment::Notifiee::Ptr notifiee() const { return notifiee_; }
@@ -152,7 +178,8 @@ namespace Shipping{
         Capacity shipmentCap_;
         Capacity recievedShip_;
         Capacity refusedShip_;
-        queue<Shipment*> shipmentQ_;
+
+        set<Shipment*> shipments_;
     };
 
     // START LOCATION CLASSES ==========================================
@@ -206,6 +233,7 @@ namespace Shipping{
             typedef Fwk::Ptr<Notifiee> Ptr;
             Notifiee(Location* s) : Fwk::BaseNotifiee<Location>(s) {}
             virtual void onShipmentRecieved(Shipment* ) {}
+            virtual void onSegmentCapacity(Segment* s) {}
         };
         virtual Location::Notifiee::Ptr notifiee() const { return notifiee_; }
         virtual void lastNotifieeIs(Notifiee* n) {
@@ -271,7 +299,7 @@ namespace Shipping{
             if (dest_ && dest && dest->name().compare(dest_->name()) == 0)
                 return;
             else if (dest_ == dest) return;
-            
+
             dest_ = dest;
             if (notifiee_) 
                 notifiee_->onDestination();
@@ -279,6 +307,7 @@ namespace Shipping{
         }
 
         Capacity recieved() const { return recieved_; }
+
         Time latency() const { return totalTime_.value()/recieved_.value(); }
         Cost totalCost() const { return totalCost_; }
 
@@ -287,10 +316,10 @@ namespace Shipping{
                 ++recieved_;
                 totalTime_ = totalTime_.value() + (s->totalTime).value();
                 totalCost_ = totalCost_.value() + (s->totalCost).value();
-            } else {
-                if (notifiee_) notifiee_->onShipmentRecieved(s);
             }
+            if (notifiee_) notifiee_->onShipmentRecieved(s); 
         }
+
     protected:
         CustomerLocation::Notifiee::Ptr notifiee_;
         Capacity rate_;

@@ -1,37 +1,92 @@
 Emily: emeryye
 Siyuan: siyuan
 
-*********************************************************************************************
-Handling errors:
-We print error message to stderr and try to continue on.
+==========================
+OUTLINE (search for header)
+==========================
+1. TO RUN (EFFECTIVELY)
+2. DESIGN
+   
+ - ROUTING
+ - EXCEPTION HANDLING:
+ - 
 
-****************************************************************************************
-The class hierarchy is (classes to the right of '-' inherits the class to the left):
+3. VERIFICATION.CPP
+4. EXPERIMENT.CPP
 
-Instance - LocationRep, SegmentRep, StatsRep, ConnRep, FleetRep
+==========================
+1. TO RUN (EFFECTIVELY)
+==========================
 
-LocationRep - CustomerRep, PortRep, TruckTerminalRep, BoatTerminalRep, PlaneTerminalRep
-SegmentRep - TruckSegmentRep, BoatSegmentRep, PlaneSegmentRep
+-   ACTIVITY MANAGER SWITCHING: Comment out lines, formatted as such:
 
-ShippingNetwork
+    Activity::Manager::Ptr activityManager = activityManagerInstance();
+    activityManager->nowIs(6.0);
+    //...
+	
+	RealTimeManager::Ptr realTimeManager = realTimeManagerInstance();
+	realTimeManager->realTimePassedIs(6.0);
+	//...
 
-ShippingNetwork::Notifiee - ShippingNetworkReactor
+==========================
+2. DESIGN
+==========================
+- SHIPPING LOGISTICS: --------------------------------------------------------------
 
-Location - CustomerLocation, PortLocation, TruckTerminal, BoatTerminal, PlaneTerminal
 
-Segment - TruckSegment, BoatSegment, PlaneSegment
 
-Fleet
 
-*********************************************************************************************
-Class ShippingNetwork maintains general information of the system, including the information
-needed by Statistics entity type.
 
-Classes with "Rep" in name are rep layer objects.
+- ROUTING: -------------------------------------------------------------------
+	Each route is a queue of RouteNodes;
+	RouteNode = Segment* nextSegment, Time fromHereToEnd;
 
-Classes including Location, Segment, Fleet and their subclasses are engine layer objects.
+	Each customer has 
+		- a list of Routes sorted by first RouteNode time; each route ends
+		  at the destination of the customer
+		- a map of Location => sorted list of RouteNodes with segments from this location
 
-The rep layer serves as a middle layer interface. When creating instances, rep layer objects
-are created first, from which the actual engine layer objects are then created. The rep layer
-also passes requests including attribute read/write, and deleting instances down to the engine
-layer.
+	During shipment, each Shipment has a pointer to the current RouteNode* - it optimally follows
+	the least-time path but can change if a segment on this path refuses the shipment.
+
+	Routes are calculated at the first time an InjectActivityReactor for a customer location runs,
+	i.e. the reactor created when the destination of a customer is set. The CustomerReactor
+	has a reference to the network, so it can calculate its routes. This assumes that the
+	network does not change after the first shipment is disbursed, as suggested as possible
+	in the assignment description.
+
+- EXCEPTION HANDLING: --------------------------------------------------------
+
+	I used Fwk::Exception library, primarily using RangeExceptions, AttributeNotSupported, 
+	IllegalName, or EntityNotFound exceptions.
+	- only triggered by attributeIs calls/mutators; calls to attribute do not pass 
+	  exceptions to client; they print messages to cerr and return empty strings.
+	- Rep layer will catch some exceptions in order to pass along more specific errors
+	  (e.g. RangeExceptions to include which entity's attribute value is out of range)
+
+
+==========================
+2. VERIFICATION.CPP
+==========================
+
+    SOURCE _________ PLANE
+          /\        /      
+         /  \      /       
+        /    C    /
+       /      \  /      
+      /________\/   
+TRUCK           DEST 
+
+The other (C)ustomer and the TRUCK and PLANE terminals are equidistant from 
+customer SOURCE & DESTINATION. 
+
+a) no shipments should go through C
+b) On a low load, shipments should go through plane terminal (faster)
+c) On higher loads, shipments should start being rejected by plane segments
+   and sent along truck segments instead
+
+
+==========================
+3. EXPERIMENT.CPP
+==========================
+

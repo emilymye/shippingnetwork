@@ -13,8 +13,9 @@ namespace Shipping{
     class SegmentReactor : public Segment::Notifiee {
     public:
         SegmentReactor(Segment* n, Fleet* f, Fwk::Ptr<Activity::Manager> m) 
-            : Segment::Notifiee(n), segment_(n), fleet_(f) {}
-        void onShipmentRecieved(Shipment*);
+            : Segment::Notifiee(n), segment_(n), fleet_(f), manager_(m) {}
+        void onShipmentNew(Shipment*);
+        void onShipmentDel();
     protected: 
         Segment::Ptr segment_;
         Fwk::Ptr<Activity::Manager> manager_;
@@ -26,22 +27,41 @@ namespace Shipping{
         LocationReactor( Location* l) 
             : Location::Notifiee(l), location_(l) { }
         void onShipmentRecieved(Shipment * shipment);
+        void onSegmentCapacity(Segment* s); 
     protected: 
         Location::Ptr location_;
+        queue<Shipment*> holdQ_;
     };
 
     class CustomerReactor : public CustomerLocation::Notifiee {
     public:
-        CustomerReactor( CustomerLocation* n, Fwk::Ptr<Activity::Manager> m) 
-            : CustomerLocation::Notifiee(n) , customer_(n), manager_(m) {}
-        void onDestination() { testCanInject(); }
-        void onTransferRate() { testCanInject(); }
-        void onShipmentSize() { testCanInject(); }
+        CustomerReactor( CustomerLocation* n, Fwk::Ptr<Activity::Manager> m, ShippingNetwork::Ptr sn) 
+            : CustomerLocation::Notifiee(n) , customer_(n), manager_(m), network_(sn), routed_(false) {}
+        void onDestination() { 
+            if (customer_->destination() != NULL) {
+                routed_ = false;
+            }
+            changeInjectActivity(); 
+        }
+        void onTransferRate() { changeInjectActivity(); }
+        void onShipmentSize() { changeInjectActivity(); }
         void onShipmentRecieved(Shipment * shipment);
+        RouteNode* route(Location * l) {
+
+        }
     protected:
-        void testCanInject();
+        void changeInjectActivity();
         CustomerLocation::Ptr customer_;
         Fwk::Ptr<Activity::Manager> manager_;
+        ShippingNetwork::Ptr network_;
+
+        //ROUTING
+        void findRoutes();
+        double segShipTime(Segment* s) ;
+        bool routed_;
+
+        vector<Route> routes_;
+        queue<Shipment*> holdQ_;
     };
 
     class InjectActivityReactor : public Activity::Notifiee {
@@ -60,9 +80,9 @@ namespace Shipping{
     public:
         ForwardActivityReactor(
             Fwk::Ptr<Activity::Manager> manager, Activity* activity, double rate, 
-                Location::Ptr l ,  Shipment* shipment) 
+            Location::Ptr l ,  Shipment* shipment) 
             : Notifiee(activity), activity_(activity), manager_(manager), 
-            forwardLoc_(l), shipment_(shipment) {}
+            forwardLoc_(l), shipment_(shipment), rate_(rate){}
         void onStatus();
     protected:
         double rate_;

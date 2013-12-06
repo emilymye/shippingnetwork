@@ -57,9 +57,8 @@ namespace ActivityImpl {
 		while (!scheduledActivities_.empty()) {
 			Activity::Ptr nextAct = scheduledActivities_.top();
             if (nextAct->nextTime() > t) break;
-	    
-			now_ = nextAct->nextTime();
 			scheduledActivities_.pop();
+			now_ = nextAct->nextTime();
             nextAct->statusIs(Activity::executing);
             nextAct->statusIs(Activity::free);
 		}
