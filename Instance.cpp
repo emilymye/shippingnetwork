@@ -102,7 +102,7 @@ namespace Shipping {
     // =========== | LOCATION INSTANCES |==========================
     class LocationRep : public Instance {
     public:
-        LocationRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr network) :
+        LocationRep(const string& name, ManagerImpl* manager, ShippingNetwork::Ptr network):
             Instance(name), manager_(manager), network_(network){}
         virtual string attribute(const string& name);
         virtual void attributeIs(const string& name, const string& v);
@@ -203,38 +203,39 @@ namespace Shipping {
 
     class PortRep : public LocationRep {
     public:
-        PortRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) :
+        PortRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network,Fwk::Ptr<Activity::Manager> am ) :
             LocationRep(name, manager, network) {
                 loc_ = PortLocation::PortLocationNew(name);
                 network_->locationNew(loc_);
-                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr(), am));
         }
     };
     class TruckTerminalRep : public LocationRep {
     public:
-        TruckTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) :
+        TruckTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network, Fwk::Ptr<Activity::Manager> am ) :
             LocationRep(name, manager, network) {
                 loc_ = TruckTerminal::TruckTerminalNew(name);
                 network_->locationNew(loc_);
-                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr(), am));
         }
     };
     class BoatTerminalRep : public LocationRep {
     public:
-        BoatTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) :
+        BoatTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network, Fwk::Ptr<Activity::Manager> am ) :
             LocationRep(name, manager, network) {
                 loc_ = BoatTerminal::BoatTerminalNew(name);
                 network_->locationNew(loc_);
-                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr(), am));
         }
     };
     class PlaneTerminalRep : public LocationRep {
     public:
-        PlaneTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network) :
+        PlaneTerminalRep(const string& name, ManagerImpl *manager, ShippingNetwork::Ptr network, Fwk::Ptr<Activity::Manager> am ) :
             LocationRep(name, manager, network) {
                 loc_ = PlaneTerminal::PlaneTerminalNew(name);
                 network_->locationNew(loc_);
-                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr()) );
+                loc_ -> lastNotifieeIs( new LocationReactor(loc_.ptr(), am));
+
         }
     };
 
@@ -612,21 +613,21 @@ namespace Shipping {
             instance_[name] = InstanceStore(t, Location);
             return t;
         } else if (type == portStr) {
-            Ptr<PortRep> t = new PortRep(name, this, network_);
+            Ptr<PortRep> t = new PortRep(name, this, network_, activityManager_);
             instance_[name] = InstanceStore(t,Location);
             return t;
         } else if (type == truckTerminalStr) {
-            Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this, network_);
+            Ptr<TruckTerminalRep> t = new TruckTerminalRep(name, this, network_, activityManager_);
             instance_[name] = InstanceStore(t,Location);
             return t;
         }
         else if (type == boatTerminalStr) {
-            Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this, network_);
+            Ptr<BoatTerminalRep> t = new BoatTerminalRep(name, this, network_, activityManager_);
             instance_[name] = InstanceStore(t,Location);
             return t;
         }
         else if (type == planeTerminalStr) {
-            Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this, network_);
+            Ptr<PlaneTerminalRep> t = new PlaneTerminalRep(name, this, network_, activityManager_);
             instance_[name] = InstanceStore(t,Location);
             return t;
         }

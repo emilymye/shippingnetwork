@@ -24,12 +24,14 @@ namespace Shipping{
 
     class LocationReactor : public Location::Notifiee{
     public:
-        LocationReactor( Location* l) 
-            : Location::Notifiee(l), location_(l) { }
+        LocationReactor( Location* l, Fwk::Ptr<Activity::Manager> m) 
+            : Location::Notifiee(l), location_(l),manager_(m) { }
         void onShipmentRecieved(Shipment * shipment);
         void onSegmentShipmentDel(Segment* seg); 
     protected: 
         Location::Ptr location_;
+        Fwk::Ptr<Activity::Manager> manager_;
+
     };
 
     class CustomerReactor : public CustomerLocation::Notifiee {
@@ -48,7 +50,7 @@ namespace Shipping{
         void onShipmentRecieved(Shipment * shipment);
 
         Capacity recieved() const { return recieved_; }
-        Time latency() const { return totalTime_.value()/recieved_.value(); }
+        Time latency() const { return (totalTime_.value()/recieved_.value()); }
         Cost totalCost() const { return totalCost_; }
 
     protected:

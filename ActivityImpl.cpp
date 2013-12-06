@@ -80,6 +80,6 @@ Fwk::Ptr<RealTimeManager> RealTimeManager::realTimeManagerInstance() {
 }
 
 void RealTimeManager::realTimePassedIs(Time t) {
-    //usleep(t * 1000000);
+    //usleep(t.value() * 1000);
 	virtualManager_->nowIs(virtualManager_->now().value() + t.value());
 }

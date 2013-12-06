@@ -16,19 +16,16 @@ namespace Shipping {
 
     void SegmentReactor::onShipmentNew(Shipment* shipment)
     {
-        //cout << "Seg " << segment_->name() << " got shipment" << endl;
-        double traversals = ceil( ((double) (shipment->packages).value())/(fleet_->capacity(segment_->mode())).value());
-        double travelTime = segment_->length().value() * traversals;
-        float travelCost = segment_->length().value() * segment_->difficulty().value() * traversals * fleet_->cost(segment_->mode()).value();
+        //cout << "Seg " << segment_->name() << " got shipment" << endl
 
-        if (fleet_ != NULL) {
-            travelTime = travelTime/fleet_->speed(segment_->mode()).value();
-            travelCost = travelCost * fleet_->cost(segment_->mode()).value();
-        } else travelTime = travelTime/50.0;
+        double traversals = ceil( ((double) (shipment->packages).value())/(fleet_->capacity(segment_->mode())).value());
+        double travelTime = segment_->length().value() * traversals /fleet_->speed(segment_->mode()).value();
+        float travelCost = segment_->length().value() * segment_->difficulty().value() * traversals * fleet_->cost(segment_->mode()).value();
 
         stringstream ss;
         ss << segment_->name()<<"_" << segment_->receivedShipments().value();
         shipment->totalCost = shipment->totalCost.value() + travelCost;
+        shipment->totalTime = shipment->totalTime.value() + travelTime;
         if (shipment->act == NULL) {
             shipment->act = manager_->activityNew(ss.str());   
             shipment->act->lastNotifieeIs(new ForwardActivityReactor(manager_,shipment->act.ptr(),shipment));
@@ -42,12 +39,11 @@ namespace Shipping {
     void LocationReactor::onSegmentShipmentDel(Segment* seg){
         map<Segment*,queue<Shipment*> >::iterator it = holdQueues_.find(seg);
         if (it == holdQueues_.end()) return;
-        queue<Shipment*> & q = it->second;
+        queue<Shipment*> q = it->second;
 
         Shipment* s = q.front();
-        s->act == NULL;
-        if (seg->shipmentNew(s))
-            q.pop();
+        q.pop();
+        if (!seg->shipmentNew(s)) q.push(s);
     }
 
     void LocationReactor::onShipmentRecieved(Shipment* s){
@@ -65,9 +61,7 @@ namespace Shipping {
             if ((*it)->shipmentNew(s)) 
                 return; //Shipment accepted package
         }
-        srand(time(NULL));
-        int randidx =rand() % (int) min(3.0,(double)(segTable.size() - 1) + .1); 
-        holdQueues_[segTable[randidx]].push(s);
+        holdQueues_[segTable[0]].push(s);
     }
 
     //CUSTOMER REACTOR
@@ -76,11 +70,8 @@ namespace Shipping {
         if (!s->dest->name().compare(customer_->name())) {
             ++recieved_;
             totalCost_ = totalCost_.value() + (s->totalCost).value();
-            totalTime_ = totalTime_.value() + manager_->now().value() - s->startTime.value();
-
-            //cout << "DEST REACHED: " << recieved_.value();
-            //cout.precision(2);
-            //cout << fixed << totalCost_.value() << totalTime_.value() << endl;
+            totalTime_ = totalTime_.value() + s->totalTime.value();
+            manager_->activityDel(s->act->name());
         } else if (!s->src->name().compare(customer_->name())){
             if (!routed_){
                 findRoutes();
@@ -97,8 +88,11 @@ namespace Shipping {
                 if ((*it)->shipmentNew(s)) return; //Shipment accepted package
             }
             srand(time(NULL));
-            int randidx =rand() % (int) max(5.0,(double)segTable.size() - 1); 
-            holdQueues_[segTable[randidx]].push(s);
+            int idx = 0;
+            if (segTable.size() >= 2) 
+                idx = (int) max(0.0,(double) (rand() % segTable.size()) - 1);
+            if (idx >= segTable.size()) idx = 0;
+            holdQueues_[segTable[idx]].push(s);
         } else throw Fwk::InternalException(
             "Error in routing - non-destination/source customers should not recieve packages" );
     }
@@ -194,12 +188,13 @@ namespace Shipping {
 
     void ForwardActivityReactor::onStatus() {
         ActivityImpl::ManagerImpl::Ptr managerImpl = Fwk::ptr_cast<ActivityImpl::ManagerImpl>(manager_);
-        Segment* seg;
+        Location * next; 
         switch (activity_->status()) {
 
         case Activity::executing:
-            seg = shipment_->forwardSeg->returnSegment();
-            if (seg->source()) seg->source()->shipmentNew(shipment_);
+            shipment_->forwardSeg->shipmentDel(shipment_);
+            next = shipment_->forwardSeg->returnSegment()->source();
+            if (next) next->shipmentNew(shipment_);
             break;
         case Activity::free:
             //each forward activity reactor is unique to a shipment, scheduled by SegmentReactor

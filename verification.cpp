@@ -7,11 +7,11 @@
 using namespace std;
 using Fwk::Exception;
 
-static const string CAPACITY_TRUCK = "4";
-static const string CAPACITY_PLANE = "1";
-static const string TRANSFER_RATE = "1";
-static const string SHIPMENT_SIZE = "10";
-static const string TIME_STEP = "10";
+static const string CAPACITY_TRUCK = "2";
+static const string CAPACITY_PLANE = "5";
+static const string TRANSFER_RATE = "48";
+static const string SHIPMENT_SIZE = "50";
+static const int TIME_STEP = 24;
 static const int STEPS = 10;
 
 int main(int argc, char *argv[]) {
@@ -20,13 +20,13 @@ int main(int argc, char *argv[]) {
         Ptr<Instance::Manager> manager = shippingInstanceManager();
 
         Ptr<Instance> fleet = manager->instanceNew("fleet", "Fleet");
-        fleet->attributeIs("Truck, speed", "70");
-        fleet->attributeIs("Truck, cost", "1.5");
-        fleet->attributeIs("Truck, capacity", "40");
+        fleet->attributeIs("Truck, speed", "50");
+        fleet->attributeIs("Truck, cost", "1");
+        fleet->attributeIs("Truck, capacity", "50");
 
         fleet->attributeIs("Plane, speed", "100");
         fleet->attributeIs("Plane, cost", "2.0");
-        fleet->attributeIs("Plane, capacity", "40");
+        fleet->attributeIs("Plane, capacity", "100");
 
         /********************************************************
         ******************* | NETWORK SETUP | ******************
@@ -110,27 +110,23 @@ int main(int argc, char *argv[]) {
         source->attributeIs("Shipment Size", SHIPMENT_SIZE);
 
         Activity::Manager::Ptr activityManager = activityManagerInstance();
-        //RealTimeManager::Ptr realTimeManager = realTimeManagerInstance();
+        // RealTimeManager::Ptr realTimeManager = realTimeManagerInstance();
 
         for ( int i = 1; i <= STEPS; i++){
-            activityManager->nowIs(10.0 * i);
-            //realTimeManager->realTimePassedIs(6.0);
+            activityManager->nowIs(TIME_STEP * i);
+            // realTimeManager->realTimePassedIs(TIME_STEP);
 
-            //Ptr<Instance> stats = manager->instanceNew("Stats");
-            //stats->attribute("Simulation");
-
-            cout << "STEP " << i << endl;
-            cout << "==========================================" << endl;
-            cout << "SOURCE -> TRUCK: Capacity " << seg1->attribute("Capacity") << 
+            cout << "AT TIME: " << TIME_STEP * i << endl;
+            cout << "SOURCE->TRUCK: Capacity " << seg1->attribute("Capacity") << 
                 "    recieved " << seg1->attribute("Shipments Received") << 
                 "    refused " << seg1->attribute("Shipments Refused") << endl;
-            cout << "TRUCK -> DEST : Capacity " << seg2->attribute("Capacity") <<
+            cout << "TRUCK->DEST : Capacity " << seg2->attribute("Capacity") <<
                 "    recieved " << seg2->attribute("Shipments Received") << 
                 "    refused " << seg2->attribute("Shipments Refused") << endl;
-            cout << "SOURCE -> PLANE: Capacity " << seg3->attribute("Capacity") <<
+            cout << "SOURCE->PLANE: Capacity " << seg3->attribute("Capacity") <<
                 "    recieved " << seg3->attribute("Shipments Received") << 
                 "    refused " << seg3->attribute("Shipments Refused") << endl;
-            cout << "PLANE-> TRAIN: Capacity " << seg4->attribute("Capacity") <<
+            cout << "PLANE->DEST: Capacity " << seg4->attribute("Capacity") <<
                 "    recieved " << seg4->attribute("Shipments Received") << 
                 "    refused " << seg4->attribute("Shipments Refused") << endl << endl;
 
@@ -138,7 +134,7 @@ int main(int argc, char *argv[]) {
                 "   Recieved Shipments:" << dest->attribute("Shipments Received") << 
                 "   Average latency: " << dest->attribute("Average Latency") << 
                 "   Total cost: " << dest->attribute("Total Cost") << endl;
-            cout << "==========================================" << endl;
+            cout << endl << endl;;
         }
 
     }

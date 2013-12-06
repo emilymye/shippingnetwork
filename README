@@ -1,24 +1,20 @@
 Emily: emeryye
 Siyuan: siyuan
 
-==========================
-OUTLINE (search for header)
-==========================
-1. TO RUN (EFFECTIVELY)
-2. DESIGN
-   
- - ROUTING
- - EXCEPTION HANDLING:
- - 
+==============================================================================
+1. DESIGN
+==============================================================================
+A. EXCEPTION HANDLING: --------------------------------------------------------
 
-3. VERIFICATION.CPP
-4. EXPERIMENT.CPP
+	I used Fwk::Exception library, primarily using RangeExceptions, AttributeNotSupported, 
+	IllegalName, or EntityNotFound exceptions.
+	- only triggered by attributeIs calls/mutators; calls to attribute do not pass 
+	  exceptions to client; they print messages to cerr and return empty strings.
+	- Rep layer will catch some exceptions in order to pass along more specific errors
+	  (e.g. RangeExceptions to include which entity's attribute value is out of range)
 
-==========================
-1. TO RUN (EFFECTIVELY)
-==========================
-
--   ACTIVITY MANAGER SWITCHING: Comment out lines, formatted as such:
+B. ACTIVITY MANAGERS: --------------------------------------------------------
+	Switch by commeting out lines, formatted as such:
 
     Activity::Manager::Ptr activityManager = activityManagerInstance();
     activityManager->nowIs(6.0);
@@ -28,46 +24,73 @@ OUTLINE (search for header)
 	realTimeManager->realTimePassedIs(6.0);
 	//...
 
-==========================
-2. DESIGN
-==========================
-- SHIPPING LOGISTICS: --------------------------------------------------------------
+	The real-time manager sleeps for 1 s for every 100 hours that pass in the simulation.
+
+C. ENTITY CLASSES - CHANGES, REACTORS ----------------------------------------
+
+	SEGMENT (S): Keeps track of Shipments* currently being forwarded, recieved/refused
+	NOTIFIEE: SegmentReactor (SR)
+	S	- bool shipmentNew - if refused, returns false; otherwise notifies. In either
+	S   - shipmentDel - called by ForwardActivityReactor to free capacity up again
+	SR 	- onShipmentNew - creates ForwardActivityReactor/activity for Shipment if did not 
+			exist and schedules it to run after the duration of shipping time through
+			this segment, calculated as if one vehicle is used to transport the shipment
+			(so 1 trip time * rounded up number of packages in shipment) 
+	SR	- shipmentDel - frees up capacity, notifies reactor which notifies location
+
+	LOCATION (L) mostly notifies NOTIFIEE: LocationReactor (LR) on events:
+	LR  - void onSegmentShipmentDel - Given a freed Segment* s, stores a queue of Segments*
+			selected to 
+	LR 	- onShipmentNew - looks up Segments in a routing table (sorted by time of overall path) - see ROUTING
+			- routing stores queue of Segments* for each source customer
+			- calls shipmentNew on Segments until either one recieves the package or
+				all reject --> shipment is stored in hold queue under one of the first
+				segments tested (randomizes slightly to avoid all waiting on the same)
+
+	CUSTOMER LOCATION(L)/CUSTOMER REACTOR are derived from the base Location/Notifiee classes
+	CLR - onshipmentNew - if this CL is the Shipment destination, onNotifiee is called 
+			to update destination attributes (recieved, average latency, total cost)
+			otherwise, operates similarly to the LR method except on the first time it is called
+			after a new Injector/destination, it calculates the routes as well.
+	CLR - onDestination/transferRate/shippingSize() - called if the respective attribute 
+			has changed values -> creates an InjectActivityReactor (next)
+
+D. ACTIVITY REACTORS -----------------------------------------------------------
+
+	InjectActivityReactor
+	-	starts injection upon creation (source attributes set) and
+	-	reschedules at rate (24/transfer rate)
+	-	has reference to source Customer to call shipmentNew( new Shipment() ) on execution
+
+	ForwardActivityReactor 
+	- scheduled by SegmentReactor onShipmentNew 
+	- not created until the Shipment has been transfered once - subsequently executes 
+		the segments' travel time amount of hours after the previous execution
+	- If the Shipment is put on hold, we delete the activity so that the holding time 
+		is included in the new ForwardActivity start time
+
+
+F. ROUTING: -------------------------------------------------------------------
+	Routes are calculated the first time an InjectActivityReactor for a customer location runs -
+	InjectActR calls Location::shipmentNew() on the source which has a flag for if the destination
+	has been changed. 
+
+	This does still assume that the network does not change at least between calls. 
+
+	All routes through non-customer locations are found between the customer src and destination,
+	and each Route object is then sorted by total time (optimal 1 shipment, current capacity). Each 
+	non-customer location then has a routeIs(Location *src, vector & segments) that functions as an 
+	entry in each location's lookup dictionary (source customers have a full map of routes) and non-source
+	customers are not included.
+
+	When location->shipmentNew is called, it notifies the reactor to attempt to route the Shipment * using
+	this vector of Segments* (by going in order, it follows the overall hierarchy of routes)
 
 
 
-
-
-- ROUTING: -------------------------------------------------------------------
-	Each route is a queue of RouteNodes;
-	RouteNode = Segment* nextSegment, Time fromHereToEnd;
-
-	Each customer has 
-		- a list of Routes sorted by first RouteNode time; each route ends
-		  at the destination of the customer
-		- a map of Location => sorted list of RouteNodes with segments from this location
-
-	During shipment, each Shipment has a pointer to the current RouteNode* - it optimally follows
-	the least-time path but can change if a segment on this path refuses the shipment.
-
-	Routes are calculated at the first time an InjectActivityReactor for a customer location runs,
-	i.e. the reactor created when the destination of a customer is set. The CustomerReactor
-	has a reference to the network, so it can calculate its routes. This assumes that the
-	network does not change after the first shipment is disbursed, as suggested as possible
-	in the assignment description.
-
-- EXCEPTION HANDLING: --------------------------------------------------------
-
-	I used Fwk::Exception library, primarily using RangeExceptions, AttributeNotSupported, 
-	IllegalName, or EntityNotFound exceptions.
-	- only triggered by attributeIs calls/mutators; calls to attribute do not pass 
-	  exceptions to client; they print messages to cerr and return empty strings.
-	- Rep layer will catch some exceptions in order to pass along more specific errors
-	  (e.g. RangeExceptions to include which entity's attribute value is out of range)
-
-
-==========================
+==============================================================================
 2. VERIFICATION.CPP
-==========================
+==============================================================================
 
     SOURCE _________ PLANE
           /\        /      
@@ -86,7 +109,170 @@ c) On higher loads, shipments should start being rejected by plane segments
    and sent along truck segments instead
 
 
-==========================
-3. EXPERIMENT.CPP
-==========================
+PARAMETERS - 
+Fleet kept consistent at truck speed = 50, cost = 1, capacity = 50 and plane x2 for all. I varied the following:
 
+Plane segment shipment capacity 	(CAPACITY_TRUCK)
+Truck segment shipment capacity 	(CAPACITY_PLANE)
+Source Transfer Rate 				(TRANSFER RATE)
+Shipment Size 						(SHIPMENT_SIZE)
+
+Light Traffic
+=========================================
+CAPACITY_TRUCK = 50
+CAPACITY_PLANE = 50
+TRANSFER RATE = 1
+SHIPMENT_SIZE = 50
+
+As expected, no refused segments, latency remains the same, 
+cost and recieved shipments increases at steady rate; All
+traffic to more time-efficient planes. (Output using hours for time)
+
+example output - at time 240/480, 10/20 recieved per plane segment, 0 for truck,
+destination recieved 10/20 packages as well  
+
+Heavier traffic - Plane capacity only
+=========================================
+CAPACITY_TRUCK = 50
+CAPACITY_PLANE = 25/10 (no refusals still), 8, 2
+TRANSFER RATE = 48
+SHIPMENT_SIZE = 50
+
+For Plane Capacity 8 we start to see segments being deferred to the truck segment,
+and changes in latency start appearing. We also see a build up from the destination
+reaching back to the destination, as, as we decrease to 2, the switch to
+defering more traffic to the truck segments and an increase in average time
+needed as the small trip size negates the speed of the plane.
+
+Heavier traffic - Both capacities changed
+=========================================
+CAPACITY_TRUCK = 50
+CAPACITY_PLANE = 25/10 (no refusals still), 8, 2
+TRANSFER RATE = 48
+SHIPMENT_SIZE = 50
+
+For both at this capacity, we do not see much of a difference from lowering the
+truck capacity. However, if we lower both (to 5 for truck and 2 for plane) we get,
+a evening out of refusals as both options start to become bad. The average latency
+increases dramtically.
+
+The output I generated was fairly in depth, so I included examples at the end.
+
+
+==============================================================================
+3. EXPERIMENT.CPP
+==============================================================================
+
+Simulation 1: Normal, Shipment size = 100
+
+
+
+
+
+Simulation 2: Normal, Shipment size = rand(1 ~ 1000)
+
+
+
+
+==============================================================================
+4 OUTPUT ======================================== VERIFICATION FROM HERE TO...
+==============================================================================
+
+Some sample output for this file (can comment out lines if preferred)
+AT TIME: 240==========
+SOURCE->TRUCK: Capacity 50    recieved 0    refused 0
+SOURCE->PLANE: Capacity 50    recieved 11    refused 0
+DESTINATION:
+   Recieved Shipments:10   Average latency: 8.00   Total cost: 16000.00
+
+AT TIME: 480==========
+SOURCE->TRUCK: Capacity 50    recieved 0    refused 0
+SOURCE->PLANE: Capacity 50    recieved 21    refused 0
+DESTINATION:
+   Recieved Shipments:20   Average latency: 8.00   Total cost: 32000.00
+...
+
+Heavier traffic - Plane capacity only
+=========================================
+CAPACITY_TRUCK = 50
+CAPACITY_PLANE = 25/10 (no refusals still), 8, 2
+TRANSFER RATE = 48
+SHIPMENT_SIZE = 50
+
+--- Transfer rate: 48, PLANE CAPACITY 8 vs TRUCK 50----
+AT TIME: 24
+SOURCE->TRUCK: Capacity 50    recieved 1    refused 0
+TRUCK->DEST : Capacity 50    recieved 1    refused 0
+SOURCE->PLANE: Capacity 8    recieved 48    refused 1
+PLANE->DEST: Capacity 8    recieved 60    refused 7
+
+DESTINATION:
+   Recieved Shipments:27   Average latency: 8.00   Total cost: 43200.00
+
+AT TIME: 240
+SOURCE->TRUCK: Capacity 50    recieved 7    refused 0
+TRUCK->DEST : Capacity 50    recieved 7    refused 0
+SOURCE->PLANE: Capacity 8    recieved 474    refused 7
+PLANE->DEST: Capacity 8    recieved 743    refused 91
+
+DESTINATION:
+   Recieved Shipments:375   Average latency: 8.15   Total cost: 594400.00
+
+--- Transfer rate: 48, PLANE CAPACITY 2 vs TRUCK 50----
+SOURCE->TRUCK: Capacity 50    recieved 31    refused 0
+TRUCK->DEST : Capacity 50    recieved 16    refused 0
+SOURCE->PLANE: Capacity 2    recieved 10    refused 31
+PLANE->DEST: Capacity 2    recieved 9    refused 3
+DESTINATION:
+   Recieved Shipments:9   Average latency: 11.56   Total cost: 11200.00
+
+AT TIME: 240
+SOURCE->TRUCK: Capacity 50    recieved 375    refused 2
+TRUCK->DEST : Capacity 50    recieved 329    refused 0
+SOURCE->PLANE: Capacity 2    recieved 89    refused 377
+PLANE->DEST: Capacity 2    recieved 105    refused 40
+
+DESTINATION:
+   Recieved Shipments:353   Average latency: 20.14   Total cost: 716000.00
+
+Heavier traffic - Both capacities changed
+=========================================
+CAPACITY_TRUCK = 8, 5
+CAPACITY_PLANE = 8, 2
+TRANSFER RATE = 48
+SHIPMENT_SIZE = 50
+
+AT TIME: 24
+SOURCE->TRUCK: Capacity 2    recieved 6    refused 13
+TRUCK->DEST : Capacity 2    recieved 4    refused 0
+SOURCE->PLANE: Capacity 5    recieved 30    refused 19
+PLANE->DEST: Capacity 5    recieved 35    refused 6
+
+DESTINATION:
+   Recieved Shipments:18   Average latency: 8.89   Total cost: 27200.00
+
+AT TIME: 144
+SOURCE->TRUCK: Capacity 2    recieved 16    refused 36
+TRUCK->DEST : Capacity 2    recieved 24    refused 5
+SOURCE->PLANE: Capacity 5    recieved 83    refused 52
+PLANE->DEST: Capacity 5    recieved 116    refused 21
+
+DESTINATION:
+   Recieved Shipments:75   Average latency: 17.60   Total cost: 134400.00
+
+AT TIME: 240
+SOURCE->TRUCK: Capacity 2    recieved 16    refused 36
+TRUCK->DEST : Capacity 2    recieved 36    refused 5
+SOURCE->PLANE: Capacity 5    recieved 83    refused 52
+PLANE->DEST: Capacity 5    recieved 116    refused 21
+
+DESTINATION:
+   Recieved Shipments:87   Average latency: 38.90   Total cost: 237600.00
+
+
+OUTPUT ===================================================== HERE!!!
+
+EXPERIMENT.CPP OUTPUT - 
+
+
+---

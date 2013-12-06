@@ -78,12 +78,11 @@ namespace Shipping{
         Segment* forwardSeg;
         
         Capacity packages;
-        Time startTime;
+        Time totalTime;
         Cost totalCost;
         Fwk::Ptr<Activity> act;
         Shipment(CustomerLocation* _src, CustomerLocation* _dest, Capacity _packages) :
-            src(_src), dest(_dest), packages(_packages), forwardSeg(NULL), act(NULL),
-            startTime(0.0), totalCost(0.0) {
+            src(_src), dest(_dest), packages(_packages), forwardSeg(NULL), act(NULL), totalTime(0.0), totalCost(0.0) {
         }
     };
 
@@ -235,7 +234,7 @@ namespace Shipping{
             class ShipmentCompare{
             public:
                 bool operator() (Shipment* a, Shipment*b){
-                    return(a->startTime < b->startTime);
+                    return(a->totalTime > b->totalTime);
                 }
             };
             map<CustomerLocation*, vector<Segment*> > routingTable_;
