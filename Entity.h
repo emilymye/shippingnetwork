@@ -68,32 +68,23 @@ namespace Shipping{
     };
 
     class Location;
+    class CustomerLocation;
+
     class Segment;
 
-    struct RouteNode {
-        Segment* segment;
-        RouteNode* next;
-        RouteNode(Segment* s) : segment(s), next(NULL) {}
-    };
-
-    struct Route {
-        vector<RouteNode> nodes;
-        set<Segment*> segments;
-        set<Location *> locations;
-        Time totalTime;
-        Route () : totalTime(0) {}
-    };
-
     struct Shipment {
-        Location* src;
-        Location* dest;
+        CustomerLocation* src;
+        CustomerLocation* dest;
+        Segment* forwardSeg;
+        
         Capacity packages;
-        Time totalTime;
+        Time startTime;
         Cost totalCost;
-        RouteNode* currRouteNode;
-        Shipment(Location* _src, Location* _dest, Capacity _packages) : 
-            src(_src), dest(_dest), packages(_packages),
-            totalTime(0.0), totalCost(0.0), currRouteNode(NULL) {}
+        Fwk::Ptr<Activity> act;
+        Shipment(CustomerLocation* _src, CustomerLocation* _dest, Capacity _packages) :
+            src(_src), dest(_dest), packages(_packages), forwardSeg(NULL), act(NULL),
+            startTime(0.0), totalCost(0.0) {
+        }
     };
 
     class Segment : public Fwk::PtrInterface<Segment> {
@@ -108,7 +99,7 @@ namespace Shipping{
         ShippingMode mode() const { return mode_; };
         Location * source() const { return source_; }
         void sourceIs( Location* _loc ) { source_ = _loc; }
-        Segment::Ptr returnSegment() const { return returnSegment_; }
+        Segment* returnSegment() const { return returnSegment_; }
         void returnSegmentIs( Segment* rs ) { returnSegment_ = rs; }
 
         Mile length() const { return length_; }
@@ -134,15 +125,17 @@ namespace Shipping{
                 return false;
             }
             ++recievedShip_;
+            shipments_.insert(s);
             if (notifiee())
                 notifiee()->onShipmentNew(s);
+            return true;
         }
 
-        
         void shipmentDel( Shipment * s){
             shipments_.erase(s);
             if (notifiee_) notifiee_->onShipmentDel();
         }
+
         virtual string name() const { return name_; }
 
         class Notifiee : public Fwk::BaseNotifiee<Segment> {
@@ -158,6 +151,7 @@ namespace Shipping{
             Segment* me = const_cast<Segment*>(this);
             me->notifiee_ = n;
         }
+       
     protected:
         Segment (const Segment&);
         Segment(Fwk::String _name, ShippingMode _mode) : name_(_name), mode_(_mode), 
@@ -233,7 +227,19 @@ namespace Shipping{
             typedef Fwk::Ptr<Notifiee> Ptr;
             Notifiee(Location* s) : Fwk::BaseNotifiee<Location>(s) {}
             virtual void onShipmentRecieved(Shipment* ) {}
-            virtual void onSegmentCapacity(Segment* s) {}
+            virtual void onSegmentShipmentDel(Segment* s) {}
+            virtual void routeTableIs(CustomerLocation* c, vector<Segment*>& list) {
+                routingTable_[c] = list;
+            }
+        protected:
+            class ShipmentCompare{
+            public:
+                bool operator() (Shipment* a, Shipment*b){
+                    return(a->startTime < b->startTime);
+                }
+            };
+            map<CustomerLocation*, vector<Segment*> > routingTable_;
+            map<Segment*, queue<Shipment*> > holdQueues_;
         };
         virtual Location::Notifiee::Ptr notifiee() const { return notifiee_; }
         virtual void lastNotifieeIs(Notifiee* n) {
@@ -247,9 +253,8 @@ namespace Shipping{
         }
     protected:
         Location ( const Location&);
-        explicit Location(Fwk::String name, LocationType _type) : name_(name), type_(_type) {}
-        mutable Location::Ptr fwkHmNext_;
-        Location::Notifiee * notifiee_;
+        explicit Location(Fwk::String name, LocationType _type) : name_(name), type_(_type), notifiee_(NULL){}
+        Location::Notifiee::Ptr notifiee_;
 
         LocationType type_;
         std::vector<Segment::Ptr> segment_;
@@ -273,18 +278,22 @@ namespace Shipping{
             virtual void onTransferRate() {}
             virtual void onShipmentSize() {}
             virtual void onDestination() {}
+
+            virtual Capacity recieved() const { return 0.0; }
+            virtual Time latency() const { return 0.0; }
+            virtual Cost totalCost() const { return 0.0; }
         };
 
         virtual void lastNotifieeIs(CustomerLocation::Notifiee* n) {
             CustomerLocation* me = const_cast<CustomerLocation*>(this);
             me->notifiee_ = n;
         }
-
         Capacity transferRate() const { return rate_; }
         void transferRateIs( Capacity rate ) {
             if (rate == rate_) return;
             rate_ = rate;
             if (notifiee_) notifiee_->onTransferRate();
+
         }
 
         Capacity shipmentSize() const { return size_; }
@@ -294,8 +303,8 @@ namespace Shipping{
             if (notifiee_) notifiee_->onShipmentSize();
         }
 
-        Location* destination() const { return dest_; }
-        void destinationIs( Location * dest ) {
+        CustomerLocation* destination() const { return dest_; }
+        void destinationIs( CustomerLocation * dest ) {
             if (dest_ && dest && dest->name().compare(dest_->name()) == 0)
                 return;
             else if (dest_ == dest) return;
@@ -306,34 +315,23 @@ namespace Shipping{
             dest_ = dest;
         }
 
-        Capacity recieved() const { return recieved_; }
-
-        Time latency() const { return totalTime_.value()/recieved_.value(); }
-        Cost totalCost() const { return totalCost_; }
-
         void shipmentNew(Shipment * s){
-            if (!s->dest->name().compare(name_)) {
-                ++recieved_;
-                totalTime_ = totalTime_.value() + (s->totalTime).value();
-                totalCost_ = totalCost_.value() + (s->totalCost).value();
-            }
             if (notifiee_) notifiee_->onShipmentRecieved(s); 
         }
 
+        Capacity recieved() const { return notifiee_->recieved(); }
+        Time latency() const { return notifiee_->latency(); }
+        Cost totalCost() const { return notifiee_->totalCost(); }
+        
     protected:
         CustomerLocation::Notifiee::Ptr notifiee_;
         Capacity rate_;
         Capacity size_;
-        Location * dest_;
-
-        Capacity recieved_;
-        Time totalTime_;
-        Cost totalCost_; 
+        CustomerLocation * dest_;
 
         CustomerLocation (const CustomerLocation& );
         CustomerLocation( Fwk::String _name) : Location(_name, Location::customer_), 
-            rate_(0), size_(0), dest_(NULL),
-            recieved_(0), totalTime_(0.0), totalCost_(0.f){}
+            rate_(0), size_(0), dest_(NULL){}
     };
 
     class PortLocation : public Location {
@@ -348,7 +346,6 @@ namespace Shipping{
         PortLocation (const PortLocation& );
         PortLocation( Fwk::String _name) : Location(_name,port_) {}
     };
-
     // Terminal subclasses
     class TruckTerminal : public Location {
     public:

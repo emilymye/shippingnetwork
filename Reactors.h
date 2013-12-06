@@ -27,16 +27,16 @@ namespace Shipping{
         LocationReactor( Location* l) 
             : Location::Notifiee(l), location_(l) { }
         void onShipmentRecieved(Shipment * shipment);
-        void onSegmentCapacity(Segment* s); 
+        void onSegmentShipmentDel(Segment* seg); 
     protected: 
         Location::Ptr location_;
-        queue<Shipment*> holdQ_;
     };
 
     class CustomerReactor : public CustomerLocation::Notifiee {
     public:
         CustomerReactor( CustomerLocation* n, Fwk::Ptr<Activity::Manager> m, ShippingNetwork::Ptr sn) 
-            : CustomerLocation::Notifiee(n) , customer_(n), manager_(m), network_(sn), routed_(false) {}
+            : CustomerLocation::Notifiee(n) , customer_(n), manager_(m), network_(sn), 
+            routed_(false), recieved_(0), totalTime_(0.0), totalCost_(0.f){}
         void onDestination() { 
             if (customer_->destination() != NULL) {
                 routed_ = false;
@@ -46,22 +46,43 @@ namespace Shipping{
         void onTransferRate() { changeInjectActivity(); }
         void onShipmentSize() { changeInjectActivity(); }
         void onShipmentRecieved(Shipment * shipment);
-        RouteNode* route(Location * l) {
 
-        }
+        Capacity recieved() const { return recieved_; }
+        Time latency() const { return totalTime_.value()/recieved_.value(); }
+        Cost totalCost() const { return totalCost_; }
+
     protected:
         void changeInjectActivity();
         CustomerLocation::Ptr customer_;
         Fwk::Ptr<Activity::Manager> manager_;
         ShippingNetwork::Ptr network_;
 
+        Capacity recieved_;
+        Time totalTime_;
+        Cost totalCost_; 
+
+        struct Route {
+            map<Location*,Segment*> nodes;
+            Segment* last;
+            Time totalTime;
+            Route () : totalTime(0.0), last(NULL) {}
+        };
+
+        class RouteCompare {
+        public:
+            bool operator() (Route & a, Route & b){
+                return (a.totalTime > b.totalTime);
+            } 
+        };
+
+        bool compareRoutes(Route a, Route b){
+            return (a.totalTime < b.totalTime);
+        }
+
         //ROUTING
         void findRoutes();
         double segShipTime(Segment* s) ;
         bool routed_;
-
-        vector<Route> routes_;
-        queue<Shipment*> holdQ_;
     };
 
     class InjectActivityReactor : public Activity::Notifiee {
@@ -79,16 +100,11 @@ namespace Shipping{
     class ForwardActivityReactor : public Activity::Notifiee {
     public:
         ForwardActivityReactor(
-            Fwk::Ptr<Activity::Manager> manager, Activity* activity, double rate, 
-            Location::Ptr l ,  Shipment* shipment) 
-            : Notifiee(activity), activity_(activity), manager_(manager), 
-            forwardLoc_(l), shipment_(shipment), rate_(rate){}
+            Fwk::Ptr<Activity::Manager> manager, Activity* activity, Shipment* shipment) : Notifiee(activity), activity_(activity), manager_(manager), shipment_(shipment){}
         void onStatus();
     protected:
-        double rate_;
         Activity::Ptr activity_;
         Fwk::Ptr<Activity::Manager> manager_;
-        Location::Ptr forwardLoc_;
         Shipment* shipment_;
     };
 

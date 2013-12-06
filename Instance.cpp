@@ -52,6 +52,9 @@ namespace Shipping {
 
     /* ====== | STATIC STRINGS | ====================*/
 
+    //STATS - ASSN 3: 
+    static const string simulationStr = "Simulation";
+
     // INSTANCE & STATS TYPES
     static const string customerStr = "Customer";
     static const string portStr = "Port";
@@ -187,11 +190,11 @@ namespace Shipping {
         } else if (name == destinationStr) {
             if (v.empty()) loc_->destinationIs(NULL);
             else {
-                Location::Ptr dest = network_->location(v);
-                if (dest == NULL) 
+                CustomerLocation* d = dynamic_cast<CustomerLocation*>(network_->location(v));
+                if (d == NULL) 
                     throw Fwk::EntityNotFoundException("Customer destination does not exist: " + v);
                 else 
-                    loc_->destinationIs(dest.ptr());
+                    loc_->destinationIs(d);
             }
         } else {
             throw Fwk::AttributeNotSupportedException("Invalid Customer Location attribute :" + name);
@@ -275,7 +278,7 @@ namespace Shipping {
         } else if (name == shipmentsRefusedStr) {
             ss << seg_->refusedShipments().value();
             return ss.str();
-        } else if (name == capacityStr) {
+        } else if (name == shipmentCapacityStr) {
             ss << seg_->shipmentCapacity().value();
             return ss.str();
         }
